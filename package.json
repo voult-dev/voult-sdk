@@ -1,13 +1,13 @@
 {
   "name": "voult-sdk",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Official SDK for Voult Authentication and Authorization API",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["authentication", "authorization", "sdk", "voult"],
+  "author": "Samuel Olabode",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

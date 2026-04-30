@@ -94,12 +94,10 @@ Configure the package for both ESM and CommonJS:
   "description": "Official SDK for Voult Authentication API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "type": "module",
@@ -121,28 +119,27 @@ Configure the package for both ESM and CommonJS:
 ```
 voult-sdk/
 ├── src/
-│   ├── index.ts           # Main entry point, exports all functions
-│   ├── client.ts          # HTTP client wrapper
-│   ├── types.ts           # TypeScript type definitions
-│   ├── errors.ts          # Custom error classes
-│   ├── constants.ts       # API endpoints, default values
+│   ├── index.js           # Main entry point, exports all functions
+│   ├── client.js          # HTTP client wrapper
+│   ├── types.js           # JSDoc type definitions
+│   ├── errors.js          # Custom error classes
+│   ├── constants.js       # API endpoints, default values
 │   ├── auth/
-│   │   ├── index.ts       # Auth module exports
-│   │   ├── signup.ts      # Sign up functions
-│   │   ├── signin.ts      # Sign in functions
-│   │   ├── signout.ts     # Sign out function
-│   │   ├── delete-user.ts # Delete user function
-│   │   └── session.ts     # Session management
+│   │   ├── index.js       # Auth module exports
+│   │   ├── signup.js      # Sign up functions
+│   │   ├── signin.js      # Sign in functions
+│   │   ├── signout.js     # Sign out function
+│   │   ├── delete-user.js # Delete user function
+│   │   └── session.js     # Session management
 │   └── utils/
-│       ├── storage.ts     # LocalStorage/SessionStorage helpers
-│       └── validation.ts  # Input validation utilities
+│       ├── storage.js     # LocalStorage/SessionStorage helpers
+│       └── validation.js  # Input validation utilities
 ├── dist/                  # Built output (generated)
 ├── test/
-│   ├── auth.test.ts       # Auth function tests
-│   └── client.test.ts     # Client tests
+│   ├── auth.test.js       # Auth function tests
+│   └── client.test.js     # Client tests
 ├── .eslintrc.js
-├── tsconfig.json
-├── vite.config.ts
+├── vite.config.js
 └── package.json
 ```
 
@@ -162,32 +159,73 @@ Key responsibilities:
 
 ### 3.2 Example Client Structure
 
-```typescript
-// src/client.ts
+```javascript
+// src/client.js
 export class VoultClient {
-  private baseURL: string;
-  private apiKey: string;
-  private appId: string;
-
-  constructor(config: VoultClientConfig) {
+  constructor(config) {
     this.baseURL = config.baseURL || 'https://api.voult.com';
     this.apiKey = config.apiKey;
     this.appId = config.appId;
   }
 
-  async request<T>(endpoint: string, options: RequestOptions): Promise<T> {
-    // Build URL, headers, body
-    // Make request
-    // Handle response
-    // Throw normalized errors
+  /**
+   * Make an HTTP request to the Voult API
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} options - Request options (method, body, headers)
+   * @returns {Promise<any>} Response data
+   */
+  async request(endpoint, options = {}) {
+    const { method = 'GET', body, headers = {} } = options;
+    
+    const url = `${this.baseURL}${endpoint}`;
+    const defaultHeaders = {
+      'Content-Type': 'application/json',
+      'X-API-Key': this.apiKey,
+      'X-App-Id': this.appId,
+    };
+
+    const response = await fetch(url, {
+      method,
+      headers: { ...defaultHeaders, ...headers },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw this.handleError(response.status, data);
+    }
+
+    return data;
   }
 
-  get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  /**
+   * Make a GET request
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} options - Request options
+   * @returns {Promise<any>} Response data
+   */
+  async get(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'GET' });
   }
 
-  post<T>(endpoint: string, body?: any, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body });
+  /**
+   * Make a POST request
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} body - Request body
+   * @param {Object} options - Request options
+   * @returns {Promise<any>} Response data
+   */
+  async post(endpoint, body, options = {}) {
+    return this.request(endpoint, { ...options, method: 'POST', body });
+  }
+
+  /**
+   * Handle API errors
+   * @private
+   */
+  handleError(status, data) {
+    // Error handling logic here
   }
 }
 ```
@@ -206,17 +244,17 @@ Always include:
 
 ### 4.1 Sign Up Functions
 
-```typescript
-// src/auth/signup.ts
+```javascript
+// src/auth/signup.js
 
 /**
  * Register a new user with username and password
+ * @param {string} username - The user's username
+ * @param {string} password - The user's password
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} User data and tokens
  */
-export async function signUpWithUsernameAndPassword(
-  username: string,
-  password: string,
-  client: VoultClient
-): Promise<AuthResponse> {
+export async function signUpWithUsernameAndPassword(username, password, client) {
   // Validate username format
   // Validate password strength
   // POST to /auth/signup/username
@@ -225,12 +263,12 @@ export async function signUpWithUsernameAndPassword(
 
 /**
  * Register a new user with email and password
+ * @param {string} email - The user's email address
+ * @param {string} password - The user's password
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} User data and tokens
  */
-export async function signUpWithEmailAndPassword(
-  email: string,
-  password: string,
-  client: VoultClient
-): Promise<AuthResponse> {
+export async function signUpWithEmailAndPassword(email, password, client) {
   // Validate email format
   // Validate password strength
   // POST to /auth/signup/email
@@ -240,17 +278,17 @@ export async function signUpWithEmailAndPassword(
 
 ### 4.2 Sign In Functions
 
-```typescript
-// src/auth/signin.ts
+```javascript
+// src/auth/signin.js
 
 /**
  * Authenticate with username and password
+ * @param {string} username - The user's username
+ * @param {string} password - The user's password
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} User data and tokens
  */
-export async function signInWithUsernameAndPassword(
-  username: string,
-  password: string,
-  client: VoultClient
-): Promise<AuthResponse> {
+export async function signInWithUsernameAndPassword(username, password, client) {
   // POST to /auth/signin/username
   // Store tokens in session
   // Return user data
@@ -258,12 +296,12 @@ export async function signInWithUsernameAndPassword(
 
 /**
  * Authenticate with email and password
+ * @param {string} email - The user's email address
+ * @param {string} password - The user's password
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} User data and tokens
  */
-export async function signInWithEmailAndPassword(
-  email: string,
-  password: string,
-  client: VoultClient
-): Promise<AuthResponse> {
+export async function signInWithEmailAndPassword(email, password, client) {
   // POST to /auth/signin/email
   // Store tokens in session
   // Return user data
@@ -272,16 +310,16 @@ export async function signInWithEmailAndPassword(
 
 ### 4.3 Passwordless Sign In
 
-```typescript
-// src/auth/signin.ts
+```javascript
+// src/auth/signin.js
 
 /**
  * Send magic link to email
+ * @param {string} email - The user's email address
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} Success confirmation
  */
-export async function signInWithEmailLink(
-  email: string,
-  client: VoultClient
-): Promise<{ success: boolean; message: string }> {
+export async function signInWithEmailLink(email, client) {
   // Validate email
   // POST to /auth/magic-link/send
   // Return success confirmation
@@ -289,11 +327,11 @@ export async function signInWithEmailLink(
 
 /**
  * Verify magic link token
+ * @param {string} token - The magic link token
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} User data and tokens
  */
-export async function verifyEmailLink(
-  token: string,
-  client: VoultClient
-): Promise<AuthResponse> {
+export async function verifyEmailLink(token, client) {
   // POST to /auth/magic-link/verify
   // Store tokens
   // Return user data
@@ -302,16 +340,28 @@ export async function verifyEmailLink(
 
 ### 4.4 Sign Out & Delete User
 
-```typescript
-// src/auth/signout.ts
-export async function signOut(client: VoultClient): Promise<void> {
+```javascript
+// src/auth/signout.js
+
+/**
+ * Sign out the current user
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<void>}
+ */
+export async function signOut(client) {
   // Call API to invalidate token (if needed)
   // Clear local storage
   // Clear session state
 }
 
-// src/auth/delete-user.ts
-export async function deleteUser(client: VoultClient): Promise<void> {
+// src/auth/delete-user.js
+
+/**
+ * Delete the current user's account
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<void>}
+ */
+export async function deleteUser(client) {
   // DELETE /auth/user
   // Clear local storage
   // Clear session state
@@ -350,37 +400,48 @@ Provide callbacks for:
 
 ### 6.1 Custom Error Classes
 
-```typescript
-// src/errors.ts
+```javascript
+// src/errors.js
 
+/**
+ * Base error class for all Voult SDK errors
+ */
 export class VoultError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public status?: number,
-    public details?: any
-  ) {
+  constructor(message, code, status, details) {
     super(message);
     this.name = 'VoultError';
+    this.code = code;
+    this.status = status;
+    this.details = details;
   }
 }
 
+/**
+ * Error thrown when authentication fails
+ */
 export class AuthenticationError extends VoultError {
-  constructor(message: string, details?: any) {
+  constructor(message, details) {
     super(message, 'AUTH_ERROR', 401, details);
     this.name = 'AuthenticationError';
   }
 }
 
+/**
+ * Error thrown when input validation fails
+ */
 export class ValidationError extends VoultError {
-  constructor(message: string, public field?: string) {
+  constructor(message, field) {
     super(message, 'VALIDATION_ERROR', 400);
     this.name = 'ValidationError';
+    this.field = field;
   }
 }
 
+/**
+ * Error thrown when network request fails
+ */
 export class NetworkError extends VoultError {
-  constructor(message: string) {
+  constructor(message) {
     super(message, 'NETWORK_ERROR');
     this.name = 'NetworkError';
   }
@@ -404,20 +465,20 @@ Map API error responses to custom errors:
 ### 7.1 Install Build Tools
 
 ```bash
-npm install -D vite @vitejs/plugin-react typescript vitest @vitest/ui
+npm install -D vite vitest @vitest/ui
 ```
 
 ### 7.2 Vite Configuration
 
-```typescript
-// vite.config.ts
+```javascript
+// vite.config.js
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(__dirname, 'src/index.js'),
       name: 'VoultSDK',
       fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
     },
@@ -433,27 +494,25 @@ export default defineConfig({
 });
 ```
 
-### 7.3 TypeScript Configuration
+### 7.3 ESLint Configuration (for JavaScript)
 
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM"],
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+```javascript
+// .eslintrc.js
+module.exports = {
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "test"]
-}
+  extends: ['eslint:recommended'],
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+  },
+  rules: {
+    // Add your preferred rules here
+  },
+};
 ```
 
 ---
@@ -476,10 +535,10 @@ Test API interactions:
 
 ### 8.3 Example Test Structure
 
-```typescript
-// test/auth/signup.test.ts
+```javascript
+// test/auth/signup.test.js
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { signUpWithEmailAndPassword } from '../../src/auth/signup';
+import { signUpWithEmailAndPassword } from '../../src/auth/signup.js';
 
 describe('signUpWithEmailAndPassword', () => {
   it('should reject invalid email', async () => {
@@ -498,50 +557,60 @@ describe('signUpWithEmailAndPassword', () => {
 
 ---
 
-## Step 9: Add TypeScript Support
+## Step 9: Add JSDoc Type Annotations
 
-### 9.1 Type Definitions
+### 9.1 Type Definitions with JSDoc
 
-Define all types in `src/types.ts`:
+Define all types using JSDoc comments in `src/types.js`:
 
-```typescript
-export interface User {
-  id: string;
-  email?: string;
-  username?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+```javascript
+// src/types.js
 
-export interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn: number;
-}
+/**
+ * @typedef {Object} User
+ * @property {string} id - Unique user identifier
+ * @property {string} [email] - User's email address
+ * @property {string} [username] - User's username
+ * @property {string} createdAt - Account creation timestamp
+ * @property {string} updatedAt - Last update timestamp
+ */
 
-export interface VoultClientConfig {
-  apiKey: string;
-  appId: string;
-  baseURL?: string;
-}
+/**
+ * @typedef {Object} AuthResponse
+ * @property {User} user - The authenticated user
+ * @property {string} accessToken - JWT access token
+ * @property {string} [refreshToken] - JWT refresh token
+ * @property {number} expiresIn - Token expiration time in seconds
+ */
 
-export interface SignUpWithEmailParams {
-  email: string;
-  password: string;
-  username?: string;
-}
+/**
+ * @typedef {Object} VoultClientConfig
+ * @property {string} apiKey - API key for authentication
+ * @property {string} appId - Application identifier
+ * @property {string} [baseURL] - API base URL (defaults to https://api.voult.com)
+ */
 
-export interface SignUpWithUsernameParams {
-  username: string;
-  password: string;
-  email?: string;
-}
+/**
+ * @typedef {Object} SignUpWithEmailParams
+ * @property {string} email - User's email address
+ * @property {string} password - User's password
+ * @property {string} [username] - Optional username
+ */
+
+/**
+ * @typedef {Object} SignUpWithUsernameParams
+ * @property {string} username - User's username
+ * @property {string} password - User's password
+ * @property {string} [email] - Optional email address
+ */
 ```
 
-### 9.2 Generate Declaration Files
+### 9.2 Benefits of JSDoc
 
-Vite/Rollup will generate `.d.ts` files automatically with the `declaration: true` TypeScript setting.
+- IDE autocomplete and type checking in VS Code
+- No build step required for type definitions
+- Works natively in JavaScript files
+- Can generate documentation with JSDoc tools
 
 ---
 
@@ -561,19 +630,19 @@ Create a comprehensive README with:
 
 Add JSDoc to all exported functions:
 
-```typescript
+```javascript
 /**
  * Registers a new user using their email and password.
  *
- * @param email - The user's email address
- * @param password - The user's password (min 8 chars, 1 uppercase, 1 number)
- * @param client - The Voult client instance
- * @returns A promise resolving to the auth response with user data and tokens
+ * @param {string} email - The user's email address
+ * @param {string} password - The user's password (min 8 chars, 1 uppercase, 1 number)
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<AuthResponse>} Auth response with user data and tokens
  * @throws {ValidationError} If email or password is invalid
  * @throws {AuthenticationError} If email already exists
  *
  * @example
- * ```ts
+ * ```js
  * const { user, accessToken } = await signUpWithEmailAndPassword(
  *   'user@example.com',
  *   'StrongPass123',
@@ -631,7 +700,7 @@ Building a professional SDK involves:
 6. **Handling** errors gracefully
 7. **Bundling** for multiple environments
 8. **Testing** thoroughly
-9. **Typing** with TypeScript
+9. **Adding JSDoc types** for IDE support
 10. **Documenting** clearly
 11. **Publishing** to npm
 

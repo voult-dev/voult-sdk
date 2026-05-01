@@ -1,17 +1,42 @@
 {
   "name": "voult-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Official SDK for Voult Authentication and Authorization API",
-  "main": "index.js",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["authentication", "authorization", "sdk", "voult"],
+  "keywords": [
+    "authentication",
+    "authorization",
+    "sdk",
+    "voult",
+    "auth",
+    "jwt",
+    "magic-link"
+  ],
   "author": "Samuel Olabode",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "axios": "^1.15.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevOlabode/voult-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DevOlabode/voult-sdk/issues"
+  },
+  "homepage": "https://github.com/DevOlabode/voult-sdk#readme"
 }
- 

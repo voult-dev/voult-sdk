@@ -24,7 +24,7 @@ This guide outlines the complete steps to build a professional-grade SDK for the
 
 ## Overview
 
-The Voult SDK is a JavaScript/TypeScript library that provides a simple, developer-friendly interface to the Voult authentication API. It abstracts away the complexity of HTTP requests, token management, and error handling.
+The Voult SDK is a JavaScript library that provides a simple, developer-friendly interface to the Voult authentication API. It abstracts away the complexity of HTTP requests, token management, and error handling.
 
 ### Planned Features (from `src/index.js`)
 

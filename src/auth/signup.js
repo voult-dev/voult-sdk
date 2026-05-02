@@ -94,7 +94,7 @@ export async function signUpWithEmailAndPassword(email, password, options = {}, 
     requestBody.username = username;
   }
   
-  // Make API request to /api/auth/register
+// Make API request to /api/auth/register
   const response = await client.post('/api/auth/register', requestBody);
   
   // Extract user data and token
@@ -103,6 +103,16 @@ export async function signUpWithEmailAndPassword(email, password, options = {}, 
   // Store session in client
   if (token) {
     client.setSession(user, token, null);
+  }
+  
+  // Send verification email automatically after successful registration
+  try {
+    await client.post('/api/auth/resend-verification', {
+      email: normalizedEmail,
+    });
+  } catch (verificationError) {
+    // Log but don't fail the signup if verification email fails
+    console.warn('Failed to send verification email:', verificationError.message);
   }
   
   return {
@@ -178,7 +188,7 @@ export async function signUpWithUsernameAndPassword(username, password, options 
     requestBody.email = email;
   }
   
-  // Make API request to /api/auth/username-register
+// Make API request to /api/auth/username-register
   const response = await client.post('/api/auth/username-register', requestBody);
   
   // Extract user data and token
@@ -187,6 +197,18 @@ export async function signUpWithUsernameAndPassword(username, password, options 
   // Store session in client
   if (token) {
     client.setSession(user, token, null);
+  }
+  
+  // Send verification email automatically if email was provided
+  if (email) {
+    try {
+      await client.post('/api/auth/resend-verification', {
+        email: email,
+      });
+    } catch (verificationError) {
+      // Log but don't fail the signup if verification email fails
+      console.warn('Failed to send verification email:', verificationError.message);
+    }
   }
   
   return {

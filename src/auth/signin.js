@@ -1,12 +1,39 @@
 /**
  * Sign In functions for the Voult SDK
- * Handles user authentication with email/password and magic links
+ * Handles user authentication with email/password, username/password, and magic links
  */
 
 import { validateEmail, validatePassword, validateToken, isValidUrl } from '../utils/validation.js';
 
 /**
+ * Username validation regex (3-30 characters, alphanumeric and underscores)
+ */
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
+
+/**
+ * Validate username format
+ * @param {string} username - The username to validate
+ * @returns {string} Normalized username
+ * @throws {ValidationError} If username is invalid
+ */
+function validateUsername(username) {
+  if (!username || typeof username !== 'string') {
+    throw new Error('Username is required');
+  }
+  
+  const normalizedUsername = username.trim().toLowerCase();
+  
+  if (!USERNAME_REGEX.test(normalizedUsername)) {
+    throw new Error('Username must be 3-30 characters, alphanumeric and underscores only');
+  }
+  
+  return normalizedUsername;
+}
+
+/**
  * Authenticate a user with email and password
+ * 
+ * Uses the /api/auth/email-login endpoint.
  * 
  * @param {string} email - The user's email address
  * @param {string} password - The user's password
@@ -31,8 +58,8 @@ export async function signInWithEmailAndPassword(email, password, client) {
   const normalizedEmail = validateEmail(email);
   validatePassword(password);
   
-  // Make API request
-  const response = await client.post('/api/auth/login', {
+  // Make API request to /api/auth/email-login
+  const response = await client.post('/api/auth/email-login', {
     email: normalizedEmail,
     password,
   });
@@ -56,10 +83,9 @@ export async function signInWithEmailAndPassword(email, password, client) {
 /**
  * Authenticate a user with username and password
  * 
- * Note: The Voult API uses email-based authentication.
- * This function treats the username as an email address.
+ * Uses the /api/auth/username-login endpoint.
  * 
- * @param {string} username - The user's username (must be a valid email format)
+ * @param {string} username - The user's username (3-30 chars, alphanumeric and underscores)
  * @param {string} password - The user's password
  * @param {VoultClient} client - The Voult client instance
  * @returns {Promise<Object>} Authentication response with user data and tokens
@@ -71,22 +97,22 @@ export async function signInWithEmailAndPassword(email, password, client) {
  * @example
  * ```js
  * const { user, accessToken, refreshToken } = await signInWithUsernameAndPassword(
- *   'user@example.com',
+ *   'john_doe',
  *   'StrongPass123!',
  *   client
  * );
  * ```
  */
 export async function signInWithUsernameAndPassword(username, password, client) {
+  // Validate username
+  const normalizedUsername = validateUsername(username);
+  
   // Validate password
   validatePassword(password);
   
-  // Treat username as email (Voult API requires email)
-  const normalizedEmail = validateEmail(username);
-  
-  // Make API request
-  const response = await client.post('/api/auth/login', {
-    email: normalizedEmail,
+  // Make API request to /api/auth/username-login
+  const response = await client.post('/api/auth/username-login', {
+    username: normalizedUsername,
     password,
   });
   

@@ -248,7 +248,7 @@ export async function getCurrentUser(client) {
     throw new Error('No authenticated user. Please sign in first.');
   }
   
-  const response = await client.get('/api/me', { requireAuth: true });
+  const response = await client.get('/api/user/me', { requireAuth: true });
   return response;
 }
 

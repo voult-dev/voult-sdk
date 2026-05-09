@@ -172,9 +172,9 @@ export async function signInWithEmailLink(email, options = {}, client) {
   }
   
   // Make API request to send magic link
+  // Note: VoultClient already injects X-Client-Id, so we only send redirectUri + email.
   const response = await client.post('/api/send-magic-link', {
     email: normalizedEmail,
-    clientId: client.clientId,
     redirectUri: options.redirectUri,
   });
   
@@ -204,9 +204,77 @@ export async function signInWithEmailLink(email, options = {}, client) {
  * const { user, accessToken, refreshToken } = await verifyEmailLink(token, client);
  * ```
  */
-export async function verifyEmailLink(token, client) {
+function extractMagicLinkToken(input) {
+  if (!input || typeof input !== 'string') {
+    return null;
+  }
+
+  // If it looks like a URL, try to parse token from query/hash
+  try {
+    const maybeUrl = new URL(input);
+    const fromQuery = maybeUrl.searchParams.get('token')
+      ?? maybeUrl.searchParams.get('t')
+      ?? maybeUrl.searchParams.get('magic_token')
+      ?? maybeUrl.searchParams.get('magicLinkToken')
+      ?? maybeUrl.searchParams.get('link_token');
+
+    if (fromQuery) return fromQuery;
+
+    // Some providers put params in hash
+    if (maybeUrl.hash) {
+      const hashParams = new URLSearchParams(maybeUrl.hash.startsWith('#') ? maybeUrl.hash.slice(1) : maybeUrl.hash);
+      return (
+        hashParams.get('token')
+        ?? hashParams.get('t')
+        ?? hashParams.get('magic_token')
+        ?? hashParams.get('magicLinkToken')
+        ?? hashParams.get('link_token')
+      );
+    }
+  } catch {
+    // Not a full URL; fall through to treat as token / query string / hash fragment
+  }
+
+  // Handle raw query string like "?token=abc" or "token=abc"
+  const cleaned = input.trim();
+  const queryLike = cleaned.startsWith('?') ? cleaned.slice(1) : cleaned;
+  const hashLike = queryLike.startsWith('#') ? queryLike.slice(1) : queryLike;
+  const params = new URLSearchParams(hashLike);
+
+  const rawTokenCandidate = cleaned.length > 0 && !cleaned.includes('=')
+    ? cleaned.replace(/^#+/, '')
+    : null;
+
+  return (
+    params.get('token')
+    ?? params.get('t')
+    ?? params.get('magic_token')
+    ?? params.get('magicLinkToken')
+    ?? params.get('link_token')
+    ?? rawTokenCandidate
+  );
+}
+
+/**
+ * Verify a magic link token and complete authentication
+ * 
+ * This function is called after the user clicks the magic link in their email.
+ * The token is typically extracted from the URL query parameters.
+ * 
+ * @param {string} tokenOrUrl - The magic link token OR callback URL containing the token
+ * @param {VoultClient} client - The Voult client instance
+ * @returns {Promise<Object>} Authentication response with user data and tokens
+ * @throws {ValidationError} If token is invalid
+ */
+export async function verifyEmailLink(tokenOrUrl, client) {
+  const extractedToken = extractMagicLinkToken(tokenOrUrl);
+  if (!extractedToken) {
+    throw new Error('Magic link token is required (provide a raw token or a callback URL containing token/t/etc).');
+  }
+
   // Validate token
-  const validToken = validateToken(token);
+  const validToken = validateToken(extractedToken);
+
   
   // Make API request to validate the token
   const response = await client.post('/api/validate-magic-link', {
@@ -221,12 +289,14 @@ export async function verifyEmailLink(token, client) {
     client.setSession(user, accessToken, refreshToken || null);
   }
   
+  const success = response?.success ?? response?.data?.success;
+
   return {
     user,
     accessToken,
     refreshToken,
     message,
-    success: response.success,
+    success,
   };
 }
 

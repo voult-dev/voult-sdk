@@ -4,10 +4,10 @@
  */
 
 import axios from 'axios';
-import { 
-  VoultError, 
-  AuthenticationError, 
-  ValidationError, 
+import {
+  VoultError,
+  AuthenticationError,
+  ValidationError,
   NetworkError,
   AuthorizationError,
   ConflictError,
@@ -141,69 +141,112 @@ export class VoultClient {
   }
   
   /**
+   * Refresh the current user session using the refresh token.
+   *
+   * Note: This assumes the Voult API exposes a refresh endpoint.
+   * If your backend uses a different route/shape, adjust here.
+   */
+  async refreshSession() {
+    if (!this.refreshToken) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    // Use a separate axios instance for refresh to avoid the response interceptor retry loop.
+    const refreshClient = axios.create({
+      baseURL: this.baseURL,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Id': this.clientId,
+        // server may require client secret
+        'X-Client-Secret': this.clientSecret,
+      },
+      timeout: 30000,
+    });
+
+    const response = await refreshClient.post('/api/auth/refresh', {
+      refreshToken: this.refreshToken,
+    });
+
+    // Expected response shape: { user, accessToken, refreshToken, message }
+    const { user, accessToken, refreshToken } = response || {};
+    if (accessToken) {
+      this.setSession(user || this.user, accessToken, refreshToken || this.refreshToken);
+    }
+
+    return response;
+  }
+
+  /**
    * Handle HTTP errors and convert to appropriate VoultError
    * @private
    * @param {Error} error - The axios error
    * @throws {VoultError} Appropriate error type
    */
-  handleError(error) {
+  async handleError(error) {
     // Network error (no response)
     if (!error.response) {
       throw new NetworkError(
-        error.code === 'ECONNREFUSED' 
+        error.code === 'ECONNREFUSED'
           ? 'Unable to connect to the Voult API. Please check your internet connection.'
           : 'Network error. Please check your connection and try again.'
       );
     }
-    
+
     const { status, data } = error.response;
     const errorCode = data?.code || data?.error || 'UNKNOWN_ERROR';
     const message = data?.message || data?.error || 'An unexpected error occurred';
-    
+
+    // If access token expired, attempt refresh once.
+    const config = error.config;
+    const alreadyRetried = config?.__voultRefreshRetried;
+
+    if (status === 401 && !alreadyRetried) {
+      // Only retry for likely auth failures (avoid retrying for other 401 reasons)
+      if (this.refreshToken) {
+        config.__voultRefreshRetried = true;
+        try {
+          await this.refreshSession();
+          return this.httpClient.request(config);
+        } catch (e) {
+          // fall through to mapped error below
+        }
+      }
+    }
+
     // Map HTTP status codes to specific error types
     switch (status) {
       case 400:
         throw new ValidationError(message);
-        
+
       case 401:
         if (errorCode === 'ACCOUNT_LOCKED') {
           throw new AccountLockedError(message);
         }
         throw new AuthenticationError(message);
-        
+
       case 403:
         if (errorCode === 'EMAIL_NOT_VERIFIED') {
           throw new AuthorizationError('Email not verified. Please verify your email before continuing.');
         }
         throw new AuthorizationError(message);
-        
+
       case 409:
         throw new ConflictError(message);
-        
+
       case 423:
         throw new AccountLockedError(message);
-        
+
       case 404:
       case 500:
       case 502:
       case 503:
-        throw new VoultError(
-          message,
-          errorCode,
-          status,
-          data
-        );
-        
+        throw new VoultError(message, errorCode, status, data);
+
       default:
-        throw new VoultError(
-          message,
-          errorCode,
-          status,
-          data
-        );
+        throw new VoultError(message, errorCode, status, data);
     }
   }
-  
+
   /**
    * Set the current user session
    * @param {Object} user - User data

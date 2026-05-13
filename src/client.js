@@ -146,35 +146,32 @@ export class VoultClient {
    * Note: This assumes the Voult API exposes a refresh endpoint.
    * If your backend uses a different route/shape, adjust here.
    */
-  async refreshSession() {
-    if (!this.refreshToken) {
-      throw new AuthenticationError('Authentication required');
-    }
-
-    // Use a separate axios instance for refresh to avoid the response interceptor retry loop.
-    const refreshClient = axios.create({
-      baseURL: this.baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Client-Id': this.clientId,
-        // server may require client secret
-        'X-Client-Secret': this.clientSecret,
-      },
-      timeout: 30000,
-    });
-
-    const response = await refreshClient.post('/api/auth/refresh', {
-      refreshToken: this.refreshToken,
-    });
-
-    // Expected response shape: { user, accessToken, refreshToken, message }
-    const { user, accessToken, refreshToken } = response || {};
-    if (accessToken) {
-      this.setSession(user || this.user, accessToken, refreshToken || this.refreshToken);
-    }
-
-    return response;
+async refreshSession() {
+  if (!this.refreshToken) {
+    throw new AuthenticationError('Authentication required');
   }
+
+  const refreshClient = axios.create({
+    baseURL: this.baseURL,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Client-Id': this.clientId,
+      'X-Client-Secret': this.clientSecret,
+    },
+    timeout: 30000,
+  });
+
+  const response = await refreshClient.post('/api/sessions/refresh', {
+    refreshToken: this.refreshToken,
+  });
+
+  const { accessToken, refreshToken } = response.data || {};
+  if (accessToken) {
+    this.setSession(this.user, accessToken, refreshToken || this.refreshToken);
+  }
+
+  return response.data;
+}
 
   /**
    * Handle HTTP errors and convert to appropriate VoultError

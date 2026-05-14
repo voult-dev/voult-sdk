@@ -32,15 +32,31 @@ export async function signOut(client) {
     };
   }
   
-  // Make API request to logout (requires authentication)
-  const response = await client.post('/api/auth/logout', {}, { requireAuth: true });
-  
+  let response;
+  try {
+    // Make API request to logout (requires authentication)
+    response = await client.post('/api/auth/logout', {}, { requireAuth: true });
+  } catch (err) {
+    // If remote logout fails because the token is already expired/invalid,
+    // we still consider the user logged out locally.
+    client.clearSession();
+
+    return {
+      success: true,
+      message: 'Logged out successfully',
+      warning:
+        err?.status === 401 || err?.status === 403 || err?.name === 'AuthenticationError'
+          ? 'Remote token invalid/expired; local session cleared.'
+          : undefined,
+    };
+  }
+
   // Clear local session regardless of API response
   client.clearSession();
-  
+
   return {
     success: true,
-    message: response.message || 'Logged out successfully',
+    message: response?.message || 'Logged out successfully',
   };
 }
 

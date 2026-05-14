@@ -34,20 +34,23 @@ export class VoultClient {
     if (!config.clientId) {
       throw new ValidationError('Client ID is required', 'clientId');
     }
-    
+
     if (!config.clientSecret) {
       throw new ValidationError('Client secret is required', 'clientSecret');
     }
-    
+
     this.baseURL = config.baseURL || DEFAULT_BASE_URL;
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
-    
+
     // Token storage (in memory by default for security)
     this.accessToken = null;
     this.refreshToken = null;
     this.user = null;
-    
+
+    // Refresh lock — prevents concurrent refresh attempts
+    this._isRefreshing = false;
+
     // Create axios instance with default config
     this.httpClient = axios.create({
       baseURL: this.baseURL,
@@ -56,30 +59,30 @@ export class VoultClient {
       },
       timeout: 30000, // 30 second timeout
     });
-    
+
     // Add request interceptor to inject headers
     this.httpClient.interceptors.request.use(
       (config) => {
         // Always include client ID
         config.headers['X-Client-Id'] = this.clientId;
-        
+
         // Include access token if available
         if (this.accessToken) {
           config.headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
-        
+
         return config;
       },
       (error) => Promise.reject(error)
     );
-    
+
     // Add response interceptor for error handling
     this.httpClient.interceptors.response.use(
       (response) => response,
       (error) => this.handleError(error)
     );
   }
-  
+
   /**
    * Make an HTTP request to the Voult API
    * @private
@@ -89,26 +92,26 @@ export class VoultClient {
    */
   async request(endpoint, options = {}) {
     const { method = 'GET', body, headers = {}, requireAuth = false } = options;
-    
+
     // Add client secret for non-OAuth routes when not using user auth
     if (!this.accessToken && !requireAuth) {
       headers['X-Client-Secret'] = this.clientSecret;
     }
-    
+
     const config = {
       method: method.toLowerCase(),
       url: endpoint,
       headers,
     };
-    
+
     if (body && ['post', 'put', 'patch'].includes(method.toLowerCase())) {
       config.data = body;
     }
-    
+
     const response = await this.httpClient.request(config);
     return response.data;
   }
-  
+
   /**
    * Make a GET request
    * @param {string} endpoint - API endpoint path
@@ -118,7 +121,7 @@ export class VoultClient {
   async get(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'GET' });
   }
-  
+
   /**
    * Make a POST request
    * @param {string} endpoint - API endpoint path
@@ -129,7 +132,7 @@ export class VoultClient {
   async post(endpoint, body, options = {}) {
     return this.request(endpoint, { ...options, method: 'POST', body });
   }
-  
+
   /**
    * Make a DELETE request
    * @param {string} endpoint - API endpoint path
@@ -139,39 +142,41 @@ export class VoultClient {
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }
-  
+
   /**
    * Refresh the current user session using the refresh token.
-   *
-   * Note: This assumes the Voult API exposes a refresh endpoint.
-   * If your backend uses a different route/shape, adjust here.
+   * Uses a separate axios instance to avoid triggering the response
+   * interceptor and causing an infinite refresh loop.
    */
-async refreshSession() {
-  if (!this.refreshToken) {
-    throw new AuthenticationError('Authentication required');
+  async refreshSession() {
+    if (!this.refreshToken) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    // Use a separate axios instance for refresh to avoid the response
+    // interceptor retry loop.
+    const refreshClient = axios.create({
+      baseURL: this.baseURL,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Id': this.clientId,
+        'X-Client-Secret': this.clientSecret,
+      },
+      timeout: 30000,
+    });
+
+    const response = await refreshClient.post('/api/sessions/refresh', {
+      refreshToken: this.refreshToken,
+    });
+
+    // axios puts the body at response.data
+    const { accessToken, refreshToken } = response.data || {};
+    if (accessToken) {
+      this.setSession(this.user, accessToken, refreshToken || this.refreshToken);
+    }
+
+    return response.data;
   }
-
-  const refreshClient = axios.create({
-    baseURL: this.baseURL,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Client-Id': this.clientId,
-      'X-Client-Secret': this.clientSecret,
-    },
-    timeout: 30000,
-  });
-
-  const response = await refreshClient.post('/api/sessions/refresh', {
-    refreshToken: this.refreshToken,
-  });
-
-  const { accessToken, refreshToken } = response.data || {};
-  if (accessToken) {
-    this.setSession(this.user, accessToken, refreshToken || this.refreshToken);
-  }
-
-  return response.data;
-}
 
   /**
    * Handle HTTP errors and convert to appropriate VoultError
@@ -193,19 +198,22 @@ async refreshSession() {
     const errorCode = data?.code || data?.error || 'UNKNOWN_ERROR';
     const message = data?.message || data?.error || 'An unexpected error occurred';
 
-    // If access token expired, attempt refresh once.
-    const config = error.config;
-    const alreadyRetried = config?.__voultRefreshRetried;
-
-    if (status === 401 && !alreadyRetried) {
-      // Only retry for likely auth failures (avoid retrying for other 401 reasons)
+    // If access token expired, attempt a single token refresh then retry.
+    // _isRefreshing prevents concurrent/recursive refresh calls.
+    if (status === 401 && !this._isRefreshing) {
       if (this.refreshToken) {
-        config.__voultRefreshRetried = true;
+        this._isRefreshing = true;
         try {
           await this.refreshSession();
-          return this.httpClient.request(config);
+          this._isRefreshing = false;
+          // Inject the new token into the original failed request and retry
+          error.config.headers['Authorization'] = `Bearer ${this.accessToken}`;
+          return this.httpClient.request(error.config);
         } catch (e) {
-          // fall through to mapped error below
+          this._isRefreshing = false;
+          // Refresh failed — clear everything so the app knows to re-login
+          this.clearSession();
+          throw new AuthenticationError('Session expired. Please sign in again.');
         }
       }
     }
@@ -255,7 +263,7 @@ async refreshSession() {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
   }
-  
+
   /**
    * Clear the current user session
    */
@@ -263,8 +271,9 @@ async refreshSession() {
     this.user = null;
     this.accessToken = null;
     this.refreshToken = null;
+    this._isRefreshing = false;
   }
-  
+
   /**
    * Check if a user is currently authenticated
    * @returns {boolean} True if user is authenticated
@@ -272,7 +281,7 @@ async refreshSession() {
   isAuthenticated() {
     return !!this.accessToken && !!this.user;
   }
-  
+
   /**
    * Get the current user
    * @returns {Object|null} Current user data or null

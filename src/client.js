@@ -13,11 +13,7 @@ import {
   ConflictError,
   AccountLockedError
 } from './errors.js';
-
-/**
- * Default API base URL
- */
-const DEFAULT_BASE_URL = 'https://api.voult.dev';
+import { DEFAULT_BASE_URL } from './constants.js';
 
 /**
  * VoultClient class for interacting with the Voult API
@@ -91,10 +87,21 @@ export class VoultClient {
    * @returns {Promise<Object>} Response data
    */
   async request(endpoint, options = {}) {
-    const { method = 'GET', body, headers = {}, requireAuth = false } = options;
+    const {
+      method = 'GET',
+      body,
+      headers = {},
+      requireAuth = false,
+      params,
+      includeClientSecret,
+    } = options;
 
-    // Add client secret for non-OAuth routes when not using user auth
-    if (!this.accessToken && !requireAuth) {
+    const shouldIncludeSecret =
+      includeClientSecret !== false &&
+      !this.accessToken &&
+      !requireAuth;
+
+    if (shouldIncludeSecret) {
       headers['X-Client-Secret'] = this.clientSecret;
     }
 
@@ -104,7 +111,11 @@ export class VoultClient {
       headers,
     };
 
-    if (body && ['post', 'put', 'patch'].includes(method.toLowerCase())) {
+    if (params && typeof params === 'object') {
+      config.params = params;
+    }
+
+    if (body && ['post', 'put', 'patch', 'delete'].includes(method.toLowerCase())) {
       config.data = body;
     }
 
@@ -144,6 +155,28 @@ export class VoultClient {
   }
 
   /**
+   * Make a PATCH request
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} body - Request body
+   * @param {Object} options - Request options
+   * @returns {Promise<Object>} Response data
+   */
+  async patch(endpoint, body, options = {}) {
+    return this.request(endpoint, { ...options, method: 'PATCH', body });
+  }
+
+  /**
+   * Make a PUT request
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} body - Request body
+   * @param {Object} options - Request options
+   * @returns {Promise<Object>} Response data
+   */
+  async put(endpoint, body, options = {}) {
+    return this.request(endpoint, { ...options, method: 'PUT', body });
+  }
+
+  /**
    * Refresh the current user session using the refresh token.
    * Uses a separate axios instance to avoid triggering the response
    * interceptor and causing an infinite refresh loop.
@@ -169,13 +202,12 @@ export class VoultClient {
       refreshToken: this.refreshToken,
     });
 
-    // axios puts the body at response.data
-    const { accessToken, refreshToken } = response.data || {};
+    const data = response.data || {};
+    const { accessToken, refreshToken } = data;
     if (accessToken) {
       this.setSession(this.user, accessToken, refreshToken || this.refreshToken);
     }
-
-    return response.data;
+    return data;
   }
 
   /**

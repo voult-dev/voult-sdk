@@ -16,6 +16,11 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
+ * Username validation regex (3-30 characters, alphanumeric and underscores)
+ */
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
+
+/**
  * Password requirements message
  */
 export const PASSWORD_REQUIREMENTS_MESSAGE = 
@@ -118,6 +123,55 @@ export function isValidUrl(url) {
 /**
  * Validates a token (for magic links, etc.)
  * @param {string} token - The token to validate
+ * @throws {ValidationError} If token is invalid
+ */
+/**
+ * @param {string} username
+ * @returns {boolean}
+ */
+export function isValidUsername(username) {
+  if (!username || typeof username !== 'string') {
+    return false;
+  }
+  return USERNAME_REGEX.test(username.trim().toLowerCase());
+}
+
+/**
+ * Validates username and throws error if invalid
+ * @param {string} username
+ * @returns {string} Normalized username
+ */
+export function validateUsername(username) {
+  if (!username || typeof username !== 'string') {
+    throw new ValidationError('Username is required', 'username');
+  }
+
+  const normalizedUsername = username.trim().toLowerCase();
+  if (!USERNAME_REGEX.test(normalizedUsername)) {
+    throw new ValidationError(
+      'Username must be 3-30 characters, alphanumeric and underscores only',
+      'username'
+    );
+  }
+
+  return normalizedUsername;
+}
+
+/**
+ * Validates that a password is present (for sign-in)
+ * @param {string} password
+ * @returns {string}
+ */
+export function validatePasswordRequired(password) {
+  if (!password || typeof password !== 'string' || password.length === 0) {
+    throw new ValidationError('Password is required', 'password');
+  }
+  return password;
+}
+
+/**
+ * Validates a token (for magic links, etc.)
+ * @param {string} token
  * @throws {ValidationError} If token is invalid
  */
 export function validateToken(token) {

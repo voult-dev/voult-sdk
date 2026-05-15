@@ -1,47 +1,13 @@
 /**
  * Voult SDK - Authentication made simple
- * 
- * Official JavaScript SDK for the Voult Authentication and Authorization API.
- * Provides a simple, developer-friendly interface for user authentication,
- * including password-based and passwordless authentication methods.
- * 
  * @module voult-sdk
- * @version 1.0.0
- * 
- * @example
- * ```js
- * import voult from 'voult-sdk';
- * 
- * // Initialize the SDK
- * const auth = voult({
- *   clientId: 'your-client-id',
- *   clientSecret: 'your-client-secret',
- * });
- * 
- * // Sign up a new user
- * const { user, token } = await auth.signUpWithEmailAndPassword(
- *   'user@example.com',
- *   'StrongPass123!'
- * );
- * 
- * // Sign in
- * const { user, accessToken } = await auth.signInWithEmailAndPassword(
- *   'user@example.com',
- *   'StrongPass123!'
- * );
- * 
- * // Sign out
- * await auth.signOut();
- * ```
  */
 
-// Version
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
-// Core client
 export { VoultClient } from './client.js';
+export { DEFAULT_BASE_URL, ENDPOINTS } from './constants.js';
 
-// Error classes
 export {
   VoultError,
   AuthenticationError,
@@ -52,37 +18,84 @@ export {
   AccountLockedError,
 } from './errors.js';
 
-// Sign up functions
+// Sign up
 export {
   signUpWithEmailAndPassword,
   signUpWithUsernameAndPassword,
 } from './auth/signup.js';
 
-// Sign in functions
+// Sign in
 export {
   signInWithEmailAndPassword,
   signInWithUsernameAndPassword,
   signInWithEmailLink,
   verifyEmailLink,
-  getCurrentUser,
-  resendVerificationEmail,
 } from './auth/signin.js';
 
-// Sign out functions
-export {
-  signOut,
-  deleteUser,
-} from './auth/signout.js';
+// Sign out / account
+export { signOut, deleteUser } from './auth/signout.js';
 
-// Validation utilities
+// Password reset
+export { sendPasswordResetEmail, resetPassword } from './auth/password.js';
+
+// Email verification
+export { verifyEmail } from './auth/email.js';
+
+// Profile & account status
+export {
+  getCurrentUser,
+  updateProfile,
+  reenableAccount,
+} from './auth/profile.js';
+
+// Sessions
+export {
+  refreshSession,
+  listSessions,
+  revokeSession,
+} from './auth/session.js';
+
+// OAuth
+export {
+  signInWithGoogle,
+  signUpWithGoogle,
+  signInWithGitHub,
+  signUpWithGitHub,
+  signInWithFacebook,
+  signUpWithFacebook,
+  signInWithLinkedIn,
+  signUpWithLinkedIn,
+  signInWithMicrosoft,
+  signUpWithMicrosoft,
+  signInWithApple,
+  signUpWithApple,
+} from './auth/oauth.js';
+
+// OAuth linking
+export {
+  linkOAuthProvider,
+  getLinkedOAuthProviders,
+  unlinkOAuthProvider,
+  setPassword,
+} from './auth/oauthLinking.js';
+
+// Validation
 export {
   isValidEmail,
   isValidPassword,
+  isValidUsername,
   isValidUrl,
   PASSWORD_REQUIREMENTS_MESSAGE,
 } from './utils/validation.js';
 
-// Import all functions for default export
+// Session persistence
+export {
+  persistSession,
+  restoreSession,
+  clearPersistedSession,
+  STORAGE_KEY,
+} from './utils/storage.js';
+
 import { VoultClient } from './client.js';
 import {
   signUpWithUsernameAndPassword as _signupUsername,
@@ -93,72 +106,115 @@ import {
   signInWithEmailAndPassword as _signinEmail,
   signInWithEmailLink as _signinLink,
   verifyEmailLink as _verifyLink,
-  getCurrentUser as _getCurrentUser,
-  resendVerificationEmail as _resendVerification,
 } from './auth/signin.js';
+import { signOut as _signOut, deleteUser as _deleteUser } from './auth/signout.js';
+import { sendPasswordResetEmail as _forgotPassword, resetPassword as _resetPassword } from './auth/password.js';
+import { verifyEmail as _verifyEmail } from './auth/email.js';
 import {
-  signOut as _signOut,
-  deleteUser as _deleteUser,
-} from './auth/signout.js';
+  getCurrentUser as _getCurrentUser,
+  updateProfile as _updateProfile,
+  reenableAccount as _reenableAccount,
+} from './auth/profile.js';
+import {
+  refreshSession as _refreshSession,
+  listSessions as _listSessions,
+  revokeSession as _revokeSession,
+} from './auth/session.js';
+import {
+  signInWithGoogle as _googleIn,
+  signUpWithGoogle as _googleUp,
+  signInWithGitHub as _githubIn,
+  signUpWithGitHub as _githubUp,
+  signInWithFacebook as _facebookIn,
+  signUpWithFacebook as _facebookUp,
+  signInWithLinkedIn as _linkedinIn,
+  signUpWithLinkedIn as _linkedinUp,
+  signInWithMicrosoft as _microsoftIn,
+  signUpWithMicrosoft as _microsoftUp,
+  signInWithApple as _appleIn,
+  signUpWithApple as _appleUp,
+} from './auth/oauth.js';
+import {
+  linkOAuthProvider as _linkOAuth,
+  getLinkedOAuthProviders as _getLinkedOAuth,
+  unlinkOAuthProvider as _unlinkOAuth,
+  setPassword as _setPassword,
+} from './auth/oauthLinking.js';
+import { persistSession as _persistSession, restoreSession as _restoreSession } from './utils/storage.js';
 
 /**
  * Initialize the Voult SDK
- * 
- * @param {Object} config - Configuration options
- * @param {string} config.clientId - Your application's client ID
- * @param {string} config.clientSecret - Your application's client secret
- * @param {string} [config.baseURL] - Optional API base URL (defaults to https://api.voult.dev)
- * @returns {Object} SDK instance with all authentication methods
- * 
- * @example
- * ```js
- * import voult from 'voult-sdk';
- * 
- * const auth = voult({
- *   clientId: 'app_abc123',
- *   clientSecret: 'secret_xyz789',
- *   baseURL: 'https://api.voult.dev' // optional
- * });
- * 
- * // Now you can use all auth methods
- * await auth.signUpWithEmailAndPassword('user@example.com', 'StrongPass123!');
- * await auth.signInWithEmailAndPassword('user@example.com', 'StrongPass123!');
- * await auth.signOut();
- * ```
+ * @param {Object} config
+ * @param {string} config.clientId
+ * @param {string} config.clientSecret
+ * @param {string} [config.baseURL]
+ * @returns {Object} SDK instance
  */
 export default function voult(config) {
   const client = new VoultClient(config);
-  
+
   return {
-    // Client instance
     client,
-    // SDK version
     VERSION,
-    // Sign up methods
+
+    // Sign up
     signUpWithEmailAndPassword: (email, password, options) =>
       _signupEmail(email, password, options, client),
     signUpWithUsernameAndPassword: (username, password, options) =>
       _signupUsername(username, password, options, client),
-    // Sign in methods
+
+    // Sign in
     signInWithEmailAndPassword: (email, password) =>
       _signinEmail(email, password, client),
     signInWithUsernameAndPassword: (username, password) =>
       _signinUsername(username, password, client),
     signInWithEmailLink: (email, options) =>
       _signinLink(email, options, client),
-    verifyEmailLink: (token) =>
-      _verifyLink(token, client),
-    // User methods
-    getCurrentUser: () =>
-      _getCurrentUser(client),
-    resendVerificationEmail: (email) =>
-      _resendVerification(email, client),
-    signOut: () =>
-      _signOut(client),
-    deleteUser: () =>
-      _deleteUser(client),
-    // Session helpers
-    isAuthenticated: () =>
-      client.isAuthenticated(),
+    verifyEmailLink: (token) => _verifyLink(token, client),
+
+    // User
+    getCurrentUser: () => _getCurrentUser(client),
+    updateProfile: (updates) => _updateProfile(updates, client),
+    reenableAccount: () => _reenableAccount(client),
+
+    // Password
+    sendPasswordResetEmail: (email) => _forgotPassword(email, client),
+    resetPassword: (token, newPassword, options) =>
+      _resetPassword(token, newPassword, options, client),
+
+    // Email
+    verifyEmail: (token, options) => _verifyEmail(token, options, client),
+
+    // Session
+    signOut: () => _signOut(client),
+    deleteUser: () => _deleteUser(client),
+    refreshSession: () => _refreshSession(client),
+    listSessions: () => _listSessions(client),
+    revokeSession: (sessionId) => _revokeSession(sessionId, client),
+
+    // OAuth
+    signInWithGoogle: (credentials) => _googleIn(credentials, client),
+    signUpWithGoogle: (credentials) => _googleUp(credentials, client),
+    signInWithGitHub: (credentials) => _githubIn(credentials, client),
+    signUpWithGitHub: (credentials) => _githubUp(credentials, client),
+    signInWithFacebook: (credentials) => _facebookIn(credentials, client),
+    signUpWithFacebook: (credentials) => _facebookUp(credentials, client),
+    signInWithLinkedIn: (credentials) => _linkedinIn(credentials, client),
+    signUpWithLinkedIn: (credentials) => _linkedinUp(credentials, client),
+    signInWithMicrosoft: (credentials) => _microsoftIn(credentials, client),
+    signUpWithMicrosoft: (credentials) => _microsoftUp(credentials, client),
+    signInWithApple: (credentials) => _appleIn(credentials, client),
+    signUpWithApple: (credentials) => _appleUp(credentials, client),
+
+    // OAuth linking
+    linkOAuthProvider: (provider) => _linkOAuth(provider, client),
+    getLinkedOAuthProviders: () => _getLinkedOAuth(client),
+    unlinkOAuthProvider: (provider) => _unlinkOAuth(provider, client),
+    setPassword: (password) => _setPassword(password, client),
+
+    // Helpers
+    isAuthenticated: () => client.isAuthenticated(),
+    persistSession: (storage) => _persistSession(client, storage),
+    restoreSession: (storage) => _restoreSession(client, storage),
   };
 }

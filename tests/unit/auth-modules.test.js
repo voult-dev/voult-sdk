@@ -73,15 +73,32 @@ function createFakeClient() {
     },
     async post(endpoint, body, options = {}) {
       calls.push({ method: 'post', endpoint, body, options });
+      if (endpoint === ENDPOINTS.REENABLE_ACCOUNT) {
+        return { success: true, message: 'Account re-enabled successfully. Please log in again.', user: this.user };
+      }
       return { success: true, message: 'ok', user: this.user, accessToken: this.accessToken, refreshToken: this.refreshToken };
     },
     async get(endpoint, options = {}) {
       calls.push({ method: 'get', endpoint, options });
+      if (endpoint === ENDPOINTS.ME) {
+        return {
+          id: this.user?.id,
+          email: this.user?.email,
+          name: this.user?.fullName,
+          fullName: this.user?.fullName,
+          isEmailVerified: this.user?.isEmailVerified,
+          createdAt: this.user?.createdAt,
+          updatedAt: this.user?.updatedAt,
+          isLocked: this.user?.isLocked,
+          lastLoginAt: this.user?.lastLoginAt,
+          app: this.user?.app,
+        };
+      }
       return { success: true, message: 'ok', user: this.user };
     },
     async patch(endpoint, body, options = {}) {
       calls.push({ method: 'patch', endpoint, body, options });
-      return { success: true, message: 'ok', user: this.user };
+      return { success: true, message: 'ok', user: { ...this.user, fullName: body.fullName } };
     },
     async delete(endpoint, options = {}) {
       calls.push({ method: 'delete', endpoint, options });
@@ -110,7 +127,7 @@ test('sign up functions validate input, call register endpoints, and set session
   assert.deepEqual(emailSignup, {
     user: null,
     token: undefined,
-    message: undefined,
+    message: 'ok',
   });
   assert.deepEqual(client.calls[0], {
     method: 'post',
@@ -134,7 +151,7 @@ test('sign up functions validate input, call register endpoints, and set session
   assert.deepEqual(usernameSignup, {
     user: null,
     token: undefined,
-    message: undefined,
+    message: 'ok',
   });
   assert.deepEqual(client.calls[1], {
     method: 'post',

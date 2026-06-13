@@ -87,17 +87,17 @@ function oauthResponse(body) {
 }
 
 function handleOAuth(req, res, body, provider, action) {
-  if (provider === 'google') {
+  if (provider.toLowerCase() === 'google') {
     if (!body.idToken && !body.accessToken) {
       send(res, 400, { code: 'VALIDATION_ERROR', message: 'Google idToken or accessToken is required' });
       return;
     }
-  } else if (provider === 'facebook') {
+  } else if (provider.toLowerCase() === 'facebook') {
     if (!body.accessToken) {
       send(res, 400, { code: 'VALIDATION_ERROR', message: 'Facebook accessToken is required' });
       return;
     }
-  } else if (provider === 'apple') {
+  } else if (provider.toLowerCase() === 'apple') {
     if (!body.code || !body.idToken) {
       send(res, 400, { code: 'VALIDATION_ERROR', message: 'Apple code and idToken are required' });
       return;

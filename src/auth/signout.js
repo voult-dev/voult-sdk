@@ -23,13 +23,15 @@ export async function signOut(client) {
     response = await client.post(ENDPOINTS.LOGOUT, {}, { requireAuth: true });
   } catch (err) {
     client.clearSession();
+    const warning =
+      err?.status === 401 || err?.status === 403 || err?.name === 'AuthenticationError'
+        ? 'Remote token invalid/expired; local session cleared.'
+        : undefined;
+
     return {
       success: true,
       message: 'Logged out successfully',
-      warning:
-        err?.status === 401 || err?.status === 403 || err?.name === 'AuthenticationError'
-          ? 'Remote token invalid/expired; local session cleared.'
-          : undefined,
+      ...(warning ? { warning } : {}),
     };
   }
 

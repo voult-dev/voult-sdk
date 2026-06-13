@@ -51,8 +51,8 @@ export function applyAuthResponse(client, response) {
     accessToken,
     refreshToken,
     token: accessToken,
-    message: response?.message,
-    success: response?.success,
+    message: payload?.message ?? response?.message,
+    success: payload?.success ?? response?.success,
   };
 }
 

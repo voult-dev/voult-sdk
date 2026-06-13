@@ -97,9 +97,8 @@ export class VoultClient {
     } = options;
 
     const shouldIncludeSecret =
-      includeClientSecret !== false &&
-      !this.accessToken &&
-      !requireAuth;
+      includeClientSecret === true ||
+      (includeClientSecret !== false && !this.accessToken && !requireAuth);
 
     if (shouldIncludeSecret) {
       headers['X-Client-Secret'] = this.clientSecret;

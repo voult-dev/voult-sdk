@@ -1,12 +1,13 @@
 /**
  * Voult SDK - Authentication made simple
  * @module voult-sdk
+ * @see https://github.com/voult-dev/voult
  */
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 
 export { VoultClient } from './client.js';
-export { DEFAULT_BASE_URL, ENDPOINTS } from './constants.js';
+export { DEFAULT_BASE_URL, ENDPOINTS, OAUTH_PROVIDERS, OAUTH_INTENTS } from './constants.js';
 
 export {
   VoultError,
@@ -55,8 +56,31 @@ export {
   revokeSession,
 } from './auth/session.js';
 
+// MFA
+export {
+  verifyMfaLogin,
+  getMfaStatus,
+  setupMfa,
+  enableMfa,
+  disableMfa,
+  regenerateMfaBackupCodes,
+} from './auth/mfa.js';
+
+// WebAuthn / passkeys
+export {
+  getWebAuthnCompatibility,
+  createPasskeyRegistrationOptions,
+  verifyPasskeyRegistration,
+  createPasskeyLoginOptions,
+  verifyPasskeyLogin,
+  listPasskeys,
+  updatePasskey,
+  deletePasskey,
+} from './auth/webauthn.js';
+
 // OAuth
 export {
+  getOAuthAuthorizationUrl,
   signInWithGoogle,
   signUpWithGoogle,
   signInWithGitHub,
@@ -96,6 +120,14 @@ export {
   STORAGE_KEY,
 } from './utils/storage.js';
 
+// Helpers
+export {
+  parseAuthResponse,
+  parseMfaChallenge,
+  applyAuthResponse,
+  resolveClientArg,
+} from './utils/helpers.js';
+
 import { VoultClient } from './client.js';
 import {
   signUpWithUsernameAndPassword as _signupUsername,
@@ -121,6 +153,25 @@ import {
   revokeSession as _revokeSession,
 } from './auth/session.js';
 import {
+  verifyMfaLogin as _verifyMfaLogin,
+  getMfaStatus as _getMfaStatus,
+  setupMfa as _setupMfa,
+  enableMfa as _enableMfa,
+  disableMfa as _disableMfa,
+  regenerateMfaBackupCodes as _regenerateMfaBackupCodes,
+} from './auth/mfa.js';
+import {
+  getWebAuthnCompatibility as _getWebAuthnCompatibility,
+  createPasskeyRegistrationOptions as _createPasskeyRegistrationOptions,
+  verifyPasskeyRegistration as _verifyPasskeyRegistration,
+  createPasskeyLoginOptions as _createPasskeyLoginOptions,
+  verifyPasskeyLogin as _verifyPasskeyLogin,
+  listPasskeys as _listPasskeys,
+  updatePasskey as _updatePasskey,
+  deletePasskey as _deletePasskey,
+} from './auth/webauthn.js';
+import {
+  getOAuthAuthorizationUrl as _getOAuthAuthorizationUrl,
   signInWithGoogle as _googleIn,
   signUpWithGoogle as _googleUp,
   signInWithGitHub as _githubIn,
@@ -148,6 +199,8 @@ import { persistSession as _persistSession, restoreSession as _restoreSession } 
  * @param {string} config.clientId
  * @param {string} config.clientSecret
  * @param {string} [config.baseURL]
+ * @param {string} [config.csrfToken]
+ * @param {boolean} [config.useCookies]
  * @returns {Object} SDK instance
  */
 export default function voult(config) {
@@ -192,7 +245,31 @@ export default function voult(config) {
     listSessions: () => _listSessions(client),
     revokeSession: (sessionId) => _revokeSession(sessionId, client),
 
+    // MFA
+    verifyMfaLogin: (mfaPendingToken, mfaToken) =>
+      _verifyMfaLogin(mfaPendingToken, mfaToken, client),
+    getMfaStatus: () => _getMfaStatus(client),
+    setupMfa: () => _setupMfa(client),
+    enableMfa: (token) => _enableMfa(token, client),
+    disableMfa: (password, mfaToken) => _disableMfa(password, mfaToken, client),
+    regenerateMfaBackupCodes: (token) => _regenerateMfaBackupCodes(token, client),
+
+    // WebAuthn
+    getWebAuthnCompatibility: () => _getWebAuthnCompatibility(client),
+    createPasskeyRegistrationOptions: (options) =>
+      _createPasskeyRegistrationOptions(options, client),
+    verifyPasskeyRegistration: (credential, options) =>
+      _verifyPasskeyRegistration(credential, options, client),
+    createPasskeyLoginOptions: (options) => _createPasskeyLoginOptions(options, client),
+    verifyPasskeyLogin: (credential) => _verifyPasskeyLogin(credential, client),
+    listPasskeys: () => _listPasskeys(client),
+    updatePasskey: (credentialId, deviceName) =>
+      _updatePasskey(credentialId, deviceName, client),
+    deletePasskey: (credentialId) => _deletePasskey(credentialId, client),
+
     // OAuth
+    getOAuthAuthorizationUrl: (provider, options) =>
+      _getOAuthAuthorizationUrl(provider, options, client),
     signInWithGoogle: (credentials) => _googleIn(credentials, client),
     signUpWithGoogle: (credentials) => _googleUp(credentials, client),
     signInWithGitHub: (credentials) => _githubIn(credentials, client),
@@ -214,6 +291,8 @@ export default function voult(config) {
 
     // Helpers
     isAuthenticated: () => client.isAuthenticated(),
+    fetchCsrfToken: () => client.fetchCsrfToken(),
+    setCsrfToken: (token) => client.setCsrfToken(token),
     persistSession: (storage) => _persistSession(client, storage),
     restoreSession: (storage) => _restoreSession(client, storage),
   };

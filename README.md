@@ -1,13 +1,16 @@
 # Voult SDK
 
-Official JavaScript SDK for the [Voult Authentication API](https://github.com/DevOlabode/voult). Provides a simple, developer-friendly interface for user authentication including password-based and passwordless authentication methods.
+Official JavaScript SDK for the [Voult Authentication API](https://github.com/voult-dev/voult). Provides a simple, developer-friendly interface for user authentication including password-based and passwordless authentication methods.
 
 ## Features
 
-- 🔐 **Password Authentication** - Sign up and sign in with email/password
+- 🔐 **Password Authentication** - Sign up and sign in with email/password or username/password
 - ✨ **Passwordless Authentication** - Magic link authentication via email
-- 🔒 **Secure Session Management** - Automatic token handling and storage
-- 🛡️ **TypeScript Ready** - Full JSDoc type annotations for IDE autocomplete
+- 🔑 **Multi-Factor Authentication** - TOTP enrollment, verification, and backup codes
+- 🪪 **Passkeys (WebAuthn)** - Register and sign in with platform passkeys
+- 🌐 **OAuth** - Direct provider token exchange and redirect-based authorization URLs
+- 🔒 **Secure Session Management** - Automatic token handling, refresh, and storage
+- 🛡️ **CSRF Support** - Optional CSRF token fetching for browser-based clients
 - 🎯 **Tree-shakeable** - Import only what you need
 - 📦 **Zero Configuration** - Works out of the box
 
@@ -30,10 +33,12 @@ const auth = voult({
 });
 
 // Sign up a new user
-const { user, token } = await auth.signUpWithEmailAndPassword(
-  'user@example.com',
-  'StrongPass123!'  // Must include uppercase, lowercase, number, special char
-);
+const { user, accessToken, refreshToken, emailVerificationRequired } =
+  await auth.signUpWithEmailAndPassword(
+    'user@example.com',
+    'StrongPass123!',  // Must include uppercase, lowercase, number, special char
+    { fullName: 'Jane Doe' }
+  );
 
 // Sign in
 const { user, accessToken } = await auth.signInWithEmailAndPassword(
@@ -61,7 +66,8 @@ import voult from 'voult-sdk';
 const auth = voult({
   clientId: 'app_abc123',
   clientSecret: 'secret_xyz789',
-  baseURL: 'https://api.voult.dev' // Optional
+  baseURL: 'https://api.voult.dev', // Optional
+  useCookies: true,                  // Optional — for CSRF-protected browser flows
 });
 ```
 
@@ -188,6 +194,71 @@ await deleteUser(client);
 // Account is disabled and session is cleared
 ```
 
+### MFA (Two-Factor Authentication)
+
+When a user has MFA enabled, sign-in returns a challenge instead of tokens:
+
+```javascript
+const result = await auth.signInWithEmailAndPassword('user@example.com', 'password');
+
+if (result.mfaRequired) {
+  const { user, accessToken } = await auth.verifyMfaLogin(
+    result.mfaPendingToken,
+    '123456' // TOTP code or backup code
+  );
+}
+```
+
+Manage MFA on an authenticated account:
+
+```javascript
+const setup = await auth.setupMfa();           // QR code + backup codes
+await auth.enableMfa('123456');                // Confirm with TOTP
+const status = await auth.getMfaStatus();
+await auth.regenerateMfaBackupCodes('123456');
+await auth.disableMfa('currentPassword', '123456');
+```
+
+### Passkeys (WebAuthn)
+
+```javascript
+// Check RP compatibility
+const compat = await auth.getWebAuthnCompatibility();
+
+// Registration (browser WebAuthn API required)
+const { options } = await auth.createPasskeyRegistrationOptions({ deviceName: 'MacBook' });
+// ... pass options to navigator.credentials.create()
+await auth.verifyPasskeyRegistration(credential, { deviceName: 'MacBook' });
+
+// Sign-in
+const { options: loginOptions } = await auth.createPasskeyLoginOptions({ email: 'user@example.com' });
+// ... pass loginOptions to navigator.credentials.get()
+await auth.verifyPasskeyLogin(credential);
+```
+
+### OAuth Authorization URL
+
+For redirect-based OAuth flows:
+
+```javascript
+const { authUrl } = await auth.getOAuthAuthorizationUrl('google', {
+  intent: 'login',                              // 'login' | 'register' | 'link'
+  redirectUri: 'https://yourapp.com/callback',
+  appId: 'your-app-id',
+});
+window.location.href = authUrl;
+```
+
+### CSRF Token (Browser Clients)
+
+Several Voult routes require CSRF protection. Enable cookies and fetch a token:
+
+```javascript
+const auth = voult({ clientId, clientSecret, useCookies: true });
+await auth.fetchCsrfToken();
+await auth.sendPasswordResetEmail('user@example.com');
+```
+
 ### Error Handling
 
 The SDK provides custom error classes for different error scenarios:
@@ -304,6 +375,8 @@ import {
 | `clientId` | string | Yes | Your application's client ID from Voult dashboard |
 | `clientSecret` | string | Yes | Your application's client secret |
 | `baseURL` | string | No | API base URL (defaults to `https://api.voult.dev`) |
+| `csrfToken` | string | No | CSRF token for state-changing routes |
+| `useCookies` | boolean | No | Send cookies with requests (needed for CSRF in browsers) |
 
 ## Error Codes
 
@@ -340,6 +413,6 @@ ISC
 
 ## Links
 
-- [GitHub Repository](https://github.com/DevOlabode/voult-sdk)
-- [Voult API Repository](https://github.com/DevOlabode/voult)
-- [Report an Issue](https://github.com/DevOlabode/voult-sdk/issues)
+- [GitHub Repository](https://github.com/voult-dev/voult-sdk)
+- [Voult API Repository](https://github.com/voult-dev/voult)
+- [Report an Issue](https://github.com/voult-dev/voult-sdk/issues)

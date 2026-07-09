@@ -139,12 +139,24 @@ export async function startTestServer() {
           send(res, 409, { code: 'USER_EXISTS', message: 'User already exists' });
           return;
         }
-        send(res, 200, { success: true, message: 'Registered', user: userFromBody(body), token: 'signup-token' });
+        send(res, 201, {
+          message: 'User registered successfully',
+          accessToken: 'signup-token',
+          refreshToken: 'signup-refresh',
+          emailVerificationRequired: true,
+          user: userFromBody(body),
+        });
         return;
       }
 
       if (path === '/api/auth/username-register') {
-        send(res, 200, { success: true, message: 'Registered', user: userFromBody(body), token: 'signup-token' });
+        send(res, 201, {
+          message: 'User registered successfully',
+          accessToken: 'signup-token',
+          refreshToken: 'signup-refresh',
+          emailVerificationRequired: true,
+          user: userFromBody(body),
+        });
         return;
       }
 
@@ -155,6 +167,14 @@ export async function startTestServer() {
         }
         if (body.email === 'locked@example.com') {
           send(res, 401, { code: 'ACCOUNT_LOCKED', message: 'Account locked' });
+          return;
+        }
+        if (body.email === 'mfa@example.com') {
+          send(res, 200, {
+            mfaRequired: true,
+            mfaPendingToken: 'mfa-pending-token',
+            message: 'MFA verification required',
+          });
           return;
         }
         send(res, 200, oauthResponse(body));
@@ -170,13 +190,153 @@ export async function startTestServer() {
         return;
       }
 
+      if (path === '/api/auth/logout') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { message: 'Logged out successfully' });
+        return;
+      }
+
       if (path === '/api/send-magic-link') {
         send(res, 200, { success: true, message: 'Magic link sent' });
         return;
       }
 
       if (path === '/api/validate-magic-link') {
-        send(res, 200, oauthResponse({ ...body, email: 'magic@example.com', fullName: 'Magic User' }));
+        send(res, 200, {
+          success: true,
+          message: 'Authentication successful',
+          data: {
+            ...oauthResponse({ ...body, email: 'magic@example.com', fullName: 'Magic User' }),
+          },
+        });
+        return;
+      }
+
+      if (path === '/csrf-token') {
+        send(res, 200, { token: 'csrf-test-token' });
+        return;
+      }
+
+      if (path === '/api/auth/mfa/verify') {
+        send(res, 200, oauthResponse({ email: 'mfa@example.com', fullName: 'MFA User' }));
+        return;
+      }
+
+      if (path === '/api/auth/mfa/status') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { mfaEnabled: true, mfaEnabledAt: '2026-01-01T00:00:00.000Z', backupCodesRemaining: 5 });
+        return;
+      }
+
+      if (path === '/api/auth/mfa/setup') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, {
+          message: 'Scan QR code',
+          qrCode: 'data:image/png;base64,abc',
+          secret: 'SECRET123',
+          backupCodes: ['111111', '222222'],
+        });
+        return;
+      }
+
+      if (path === '/api/auth/mfa/enable') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { message: 'MFA enabled successfully', mfaEnabled: true });
+        return;
+      }
+
+      if (path === '/api/auth/mfa/disable') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { message: 'MFA disabled successfully', mfaEnabled: false });
+        return;
+      }
+
+      if (path === '/api/auth/mfa/backup-codes/regenerate') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { message: 'Backup codes regenerated', backupCodes: ['333333', '444444'] });
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/compatibility') {
+        send(res, 200, { supported: true, rpID: 'voult.dev', origin: 'https://voult.dev' });
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/register/options') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { message: 'Complete registration', options: { challenge: 'abc' }, deviceName: 'MacBook' });
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/register/verify') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 201, {
+          message: 'Passkey registered',
+          credential: { id: 'cred-1', deviceName: body.deviceName || 'Device' },
+        });
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/login/options') {
+        send(res, 200, { message: 'Complete login', options: { challenge: 'xyz' } });
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/login/verify') {
+        send(res, 200, oauthResponse({ email: 'passkey@example.com', fullName: 'Passkey User' }));
+        return;
+      }
+
+      if (path === '/api/auth/webauthn/credentials') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { credentials: [{ id: 'cred-1', deviceName: 'MacBook' }] });
+        return;
+      }
+
+      const webauthnCredentialMatch = path.match(/^\/api\/auth\/webauthn\/credentials\/([^/]+)$/);
+      if (webauthnCredentialMatch) {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        if (req.method === 'PATCH') {
+          send(res, 200, {
+            message: 'Passkey updated',
+            credential: { id: webauthnCredentialMatch[1], deviceName: body.deviceName },
+          });
+          return;
+        }
+        if (req.method === 'DELETE') {
+          send(res, 200, { message: 'Passkey deleted' });
+          return;
+        }
+      }
+
+      const oauthAuthorizeMatch = path.match(/^\/api\/oauth\/([^/]+)\/authorize$/);
+      if (oauthAuthorizeMatch) {
+        send(res, 200, {
+          authUrl: `https://oauth.example.test/${oauthAuthorizeMatch[1]}`,
+          provider: oauthAuthorizeMatch[1],
+          intent: body.intent,
+          expiresInSeconds: 600,
+        });
         return;
       }
 

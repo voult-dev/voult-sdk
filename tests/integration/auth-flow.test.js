@@ -18,7 +18,7 @@ test('named exports and default export run a complete password and magic-link fl
   t.after(() => server.close());
 
   const auth = voult({ clientId: 'client-id', clientSecret: 'client-secret', baseURL });
-  assert.equal(auth.VERSION, '0.2.0');
+  assert.equal(auth.VERSION, '0.3.0');
   assert.equal(typeof auth.client.request, 'function');
   assert.equal(typeof auth.signUpWithEmailAndPassword, 'function');
 
@@ -42,8 +42,11 @@ test('named exports and default export run a complete password and magic-link fl
       lastLoginAt: '2026-01-01T00:00:00.000Z',
       app: { id: 'app-1' },
     },
+    accessToken: 'signup-token',
+    refreshToken: 'signup-refresh',
     token: 'signup-token',
-    message: 'Registered',
+    emailVerificationRequired: true,
+    message: 'User registered successfully',
   });
   assert.equal(auth.client.isAuthenticated(), true);
   assert.deepEqual(auth.client.getCurrentUser(), signedUp.user);

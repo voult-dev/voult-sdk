@@ -1,6 +1,6 @@
 {
   "name": "voult-sdk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Official SDK for Voult Authentication and Authorization API",
   "type": "module",
   "main": "./src/index.js",
@@ -35,10 +35,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DevOlabode/voult-sdk.git"
+    "url": "https://github.com/voult-dev/voult-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/DevOlabode/voult-sdk/issues"
+    "url": "https://github.com/voult-dev/voult-sdk/issues"
   },
-  "homepage": "https://github.com/DevOlabode/voult-sdk#readme"
+  "homepage": "https://github.com/voult-dev/voult-sdk#readme"
 }

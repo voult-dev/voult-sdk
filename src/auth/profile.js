@@ -30,6 +30,14 @@ export async function getCurrentUser(client) {
     app: profile.app,
   };
 
+  if (profile.username) {
+    user.username = profile.username;
+  }
+
+  if (profile.mfaEnabled != null) {
+    user.mfaEnabled = profile.mfaEnabled;
+  }
+
   client.user = user;
   return user;
 }

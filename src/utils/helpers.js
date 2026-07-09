@@ -31,29 +31,75 @@ export function requireAuthenticated(client) {
 }
 
 /**
+ * Normalize auth API responses without mutating client session.
+ * @param {Object} response
+ * @returns {Object}
+ */
+export function parseAuthResponse(response) {
+  const payload = response?.data ?? response;
+  const user = payload?.user ?? response?.user;
+  const accessToken =
+    payload?.accessToken ?? response?.accessToken ?? response?.token ?? undefined;
+  const refreshToken = payload?.refreshToken ?? response?.refreshToken ?? undefined;
+
+  const result = {
+    user,
+    accessToken,
+    refreshToken,
+    token: accessToken,
+    message: payload?.message ?? response?.message,
+  };
+
+  const success = payload?.success ?? response?.success;
+  if (success != null) {
+    result.success = success;
+  }
+
+  const emailVerificationRequired =
+    response?.emailVerificationRequired ?? payload?.emailVerificationRequired;
+  if (emailVerificationRequired != null) {
+    result.emailVerificationRequired = emailVerificationRequired;
+  }
+
+  return result;
+}
+
+/**
+ * Returns MFA challenge payload when login requires a second factor.
+ * @param {Object} response
+ * @returns {Object|null}
+ */
+export function parseMfaChallenge(response) {
+  if (!response?.mfaRequired) {
+    return null;
+  }
+
+  return {
+    mfaRequired: true,
+    mfaPendingToken: response.mfaPendingToken,
+    message: response.message,
+  };
+}
+
+/**
  * Normalize auth API responses and persist session on the client.
  * @param {VoultClient} client
  * @param {Object} response
  * @returns {Object}
  */
 export function applyAuthResponse(client, response) {
-  const payload = response?.data ?? response;
-  const user = payload?.user ?? response?.user;
-  const accessToken = payload?.accessToken ?? response?.accessToken ?? response?.token;
-  const refreshToken = payload?.refreshToken ?? response?.refreshToken ?? null;
-
-  if (accessToken && user) {
-    client.setSession(user, accessToken, refreshToken);
+  const mfaChallenge = parseMfaChallenge(response);
+  if (mfaChallenge) {
+    return mfaChallenge;
   }
 
-  return {
-    user,
-    accessToken,
-    refreshToken,
-    token: accessToken,
-    message: payload?.message ?? response?.message,
-    success: payload?.success ?? response?.success,
-  };
+  const parsed = parseAuthResponse(response);
+
+  if (parsed.accessToken && parsed.user) {
+    client.setSession(parsed.user, parsed.accessToken, parsed.refreshToken);
+  }
+
+  return parsed;
 }
 
 /**

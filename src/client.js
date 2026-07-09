@@ -13,7 +13,9 @@ import {
   ConflictError,
   AccountLockedError
 } from './errors.js';
-import { DEFAULT_BASE_URL } from './constants.js';
+import { DEFAULT_BASE_URL, ENDPOINTS } from './constants.js';
+
+const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
 /**
  * VoultClient class for interacting with the Voult API
@@ -25,6 +27,8 @@ export class VoultClient {
    * @param {string} config.baseURL - API base URL (defaults to https://api.voult.dev)
    * @param {string} config.clientId - Your application's client ID
    * @param {string} config.clientSecret - Your application's client secret
+   * @param {string} [config.csrfToken] - CSRF token for state-changing routes
+   * @param {boolean} [config.useCookies=false] - Send cookies (required for session CSRF)
    */
   constructor(config) {
     if (!config.clientId) {
@@ -38,6 +42,8 @@ export class VoultClient {
     this.baseURL = config.baseURL || DEFAULT_BASE_URL;
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
+    this.useCookies = config.useCookies === true;
+    this.csrfToken = config.csrfToken || null;
 
     // Token storage (in memory by default for security)
     this.accessToken = null;
@@ -53,18 +59,22 @@ export class VoultClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30000,
+      withCredentials: this.useCookies,
     });
 
     // Add request interceptor to inject headers
     this.httpClient.interceptors.request.use(
       (config) => {
-        // Always include client ID
         config.headers['X-Client-Id'] = this.clientId;
 
-        // Include access token if available
         if (this.accessToken) {
           config.headers['Authorization'] = `Bearer ${this.accessToken}`;
+        }
+
+        const method = (config.method || 'get').toLowerCase();
+        if (this.csrfToken && MUTATING_METHODS.has(method)) {
+          config.headers['X-CSRF-Token'] = this.csrfToken;
         }
 
         return config;
@@ -77,6 +87,35 @@ export class VoultClient {
       (response) => response,
       (error) => this.handleError(error)
     );
+  }
+
+  /**
+   * Fetch a CSRF token from the Voult API (requires session cookies).
+   * @returns {Promise<string>} CSRF token
+   */
+  async fetchCsrfToken() {
+    const response = await this.httpClient.get(ENDPOINTS.CSRF_TOKEN);
+    const token = response.data?.token;
+
+    if (!token) {
+      throw new VoultError(
+        'CSRF token missing from response',
+        'CSRF_TOKEN_MISSING',
+        response.status,
+        response.data
+      );
+    }
+
+    this.csrfToken = token;
+    return token;
+  }
+
+  /**
+   * Set the CSRF token used on state-changing requests.
+   * @param {string|null} token
+   */
+  setCsrfToken(token) {
+    this.csrfToken = token || null;
   }
 
   /**
@@ -263,6 +302,9 @@ export class VoultClient {
       case 403:
         if (errorCode === 'EMAIL_NOT_VERIFIED') {
           throw new AuthorizationError('Email not verified. Please verify your email before continuing.');
+        }
+        if (errorCode === 'ACCOUNT_DISABLED') {
+          throw new AuthorizationError('Account is disabled.');
         }
         throw new AuthorizationError(message);
 

@@ -2,9 +2,88 @@
  * OAuth sign-in and sign-up for supported providers
  */
 
-import { ENDPOINTS } from '../constants.js';
-import { applyAuthResponse, assertOAuthCredential } from '../utils/helpers.js';
+import { ENDPOINTS, OAUTH_INTENTS, OAUTH_PROVIDERS } from '../constants.js';
+import { applyAuthResponse, assertOAuthCredential, resolveClientArg } from '../utils/helpers.js';
 import { ValidationError } from '../errors.js';
+import { isValidUrl } from '../utils/validation.js';
+
+function assertOAuthProvider(provider) {
+  if (!provider || typeof provider !== 'string') {
+    throw new ValidationError('OAuth provider is required', 'provider');
+  }
+
+  const normalized = provider.toLowerCase();
+  if (!OAUTH_PROVIDERS.includes(normalized)) {
+    throw new ValidationError(
+      `Unsupported provider. Use one of: ${OAUTH_PROVIDERS.join(', ')}`,
+      'provider'
+    );
+  }
+
+  return normalized;
+}
+
+/**
+ * Generate an OAuth authorization URL for redirect-based login/register/link flows.
+ * @param {string} provider
+ * @param {Object} options
+ * @param {'register'|'login'|'link'} options.intent
+ * @param {string} options.redirectUri
+ * @param {string} [options.appId] - App ID (defaults to X-App-ID header via clientId context)
+ * @param {string} [options.userId] - Required when intent is `link`
+ * @param {import('../client.js').VoultClient} client
+ */
+export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
+  const resolved = resolveClientArg(options, client);
+  client = resolved.client;
+  options = resolved.options;
+
+  const normalizedProvider = assertOAuthProvider(provider);
+
+  if (!options.intent || !OAUTH_INTENTS.includes(options.intent)) {
+    throw new ValidationError(
+      `intent must be one of: ${OAUTH_INTENTS.join(', ')}`,
+      'intent'
+    );
+  }
+
+  if (!options.redirectUri) {
+    throw new ValidationError('redirectUri is required', 'redirectUri');
+  }
+
+  if (!isValidUrl(options.redirectUri)) {
+    throw new ValidationError('Invalid redirectUri format. Must be a valid URL.', 'redirectUri');
+  }
+
+  if (options.intent === 'link' && !options.userId) {
+    throw new ValidationError('userId is required when intent is link', 'userId');
+  }
+
+  const body = {
+    intent: options.intent,
+    redirectUri: options.redirectUri,
+    appId: options.appId,
+    userId: options.userId,
+  };
+
+  const headers = {};
+  if (options.appId) {
+    headers['X-App-ID'] = options.appId;
+  }
+
+  const response = await client.post(ENDPOINTS.OAUTH_AUTHORIZE(normalizedProvider), body, {
+    headers,
+    includeClientSecret: false,
+  });
+
+  return {
+    authUrl: response.authUrl,
+    provider: response.provider ?? normalizedProvider,
+    intent: response.intent ?? options.intent,
+    expiresInSeconds: response.expiresInSeconds,
+    deprecation: response._deprecation,
+  };
+}
 
 async function oauthAuth(endpoint, credentials, client) {
   const response = await client.post(endpoint, credentials, {

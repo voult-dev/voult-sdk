@@ -9,7 +9,7 @@ import {
   validateFullName,
   validateUsername,
 } from '../utils/validation.js';
-import { resolveClientArg } from '../utils/helpers.js';
+import { resolveClientArg, applyAuthResponse } from '../utils/helpers.js';
 
 /**
  * Register a new user with email and password
@@ -42,13 +42,7 @@ export async function signUpWithEmailAndPassword(email, password, options = {}, 
 
   const response = await client.post(ENDPOINTS.REGISTER, requestBody);
 
-  const { user, token, message } = response;
-
-  if (token) {
-    client.setSession(user, token, null);
-  }
-
-  return { user, token, message };
+  return applyAuthResponse(client, response);
 }
 
 /**
@@ -86,11 +80,5 @@ export async function signUpWithUsernameAndPassword(username, password, options 
 
   const response = await client.post(ENDPOINTS.USERNAME_REGISTER, requestBody);
 
-  const { user, token, message } = response;
-
-  if (token) {
-    client.setSession(user, token, null);
-  }
-
-  return { user, token, message };
+  return applyAuthResponse(client, response);
 }

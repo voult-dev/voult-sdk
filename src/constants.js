@@ -1,7 +1,11 @@
 /**
  * Voult API endpoint paths
+ * @see https://github.com/voult-dev/voult
  */
 export const ENDPOINTS = {
+  // CSRF (session-based; requires credentials when fetching)
+  CSRF_TOKEN: '/csrf-token',
+
   // Password auth
   REGISTER: '/api/auth/register',
   USERNAME_REGISTER: '/api/auth/username-register',
@@ -26,7 +30,27 @@ export const ENDPOINTS = {
   SESSION_REFRESH: '/api/sessions/refresh',
   SESSION_REVOKE: (sessionId) => `/api/sessions/revoke/${sessionId}`,
 
-  // OAuth providers
+  // MFA
+  MFA_VERIFY: '/api/auth/mfa/verify',
+  MFA_STATUS: '/api/auth/mfa/status',
+  MFA_SETUP: '/api/auth/mfa/setup',
+  MFA_ENABLE: '/api/auth/mfa/enable',
+  MFA_DISABLE: '/api/auth/mfa/disable',
+  MFA_REGENERATE_BACKUP_CODES: '/api/auth/mfa/backup-codes/regenerate',
+
+  // WebAuthn / passkeys
+  WEBAUTHN_COMPATIBILITY: '/api/auth/webauthn/compatibility',
+  WEBAUTHN_REGISTER_OPTIONS: '/api/auth/webauthn/register/options',
+  WEBAUTHN_REGISTER_VERIFY: '/api/auth/webauthn/register/verify',
+  WEBAUTHN_LOGIN_OPTIONS: '/api/auth/webauthn/login/options',
+  WEBAUTHN_LOGIN_VERIFY: '/api/auth/webauthn/login/verify',
+  WEBAUTHN_CREDENTIALS: '/api/auth/webauthn/credentials',
+  WEBAUTHN_CREDENTIAL: (id) => `/api/auth/webauthn/credentials/${id}`,
+
+  // OAuth — unified authorization URL flow
+  OAUTH_AUTHORIZE: (provider) => `/api/oauth/${provider}/authorize`,
+
+  // OAuth — provider token exchange (legacy/direct)
   GOOGLE_LOGIN: '/api/auth/google/login',
   GOOGLE_REGISTER: '/api/auth/google/register',
   GITHUB_LOGIN: '/api/auth/github/login',
@@ -50,3 +74,14 @@ export const ENDPOINTS = {
 };
 
 export const DEFAULT_BASE_URL = 'https://api.voult.dev';
+
+export const OAUTH_PROVIDERS = [
+  'google',
+  'github',
+  'facebook',
+  'linkedin',
+  'microsoft',
+  'apple',
+];
+
+export const OAUTH_INTENTS = ['register', 'login', 'link'];

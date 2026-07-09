@@ -27,16 +27,16 @@ import voult from 'voult-sdk';
 
 // Initialize the SDK
 const auth = voult({
-  clientId: 'your-client-id',      // From your Voult dashboard
+  clientId: 'your-client-id', 
   clientSecret: 'your-client-secret',
-  baseURL: 'https://api.voult.dev'  // Optional, defaults to this
+  baseURL: 'https://api.voult.dev'
 });
 
 // Sign up a new user
 const { user, accessToken, refreshToken, emailVerificationRequired } =
   await auth.signUpWithEmailAndPassword(
     'user@example.com',
-    'StrongPass123!',  // Must include uppercase, lowercase, number, special char
+    'StrongPass123!', 
     { fullName: 'Jane Doe' }
   );
 
@@ -66,8 +66,8 @@ import voult from 'voult-sdk';
 const auth = voult({
   clientId: 'app_abc123',
   clientSecret: 'secret_xyz789',
-  baseURL: 'https://api.voult.dev', // Optional
-  useCookies: true,                  // Optional — for CSRF-protected browser flows
+  baseURL: 'https://api.voult.dev', 
+  useCookies: true,                
 });
 ```
 
@@ -82,7 +82,7 @@ try {
   const { user, token } = await signUpWithEmailAndPassword(
     'user@example.com',
     'StrongPass123!',
-    { fullName: 'John Doe' },  // Optional
+    { fullName: 'John Doe' }, 
     client
   );
   
@@ -147,7 +147,7 @@ import { signInWithEmailLink } from 'voult-sdk';
 await signInWithEmailLink(
   'user@example.com',
   { 
-    redirectUri: 'https://yourapp.com/auth/callback'  // Where user goes after clicking link
+    redirectUri: 'https://yourapp.com/auth/callback'
   },
   client
 );
@@ -191,7 +191,6 @@ await signOut(client);
 import { deleteUser } from 'voult-sdk';
 
 await deleteUser(client);
-// Account is disabled and session is cleared
 ```
 
 ### MFA (Two-Factor Authentication)
@@ -204,7 +203,7 @@ const result = await auth.signInWithEmailAndPassword('user@example.com', 'passwo
 if (result.mfaRequired) {
   const { user, accessToken } = await auth.verifyMfaLogin(
     result.mfaPendingToken,
-    '123456' // TOTP code or backup code
+    '123456' 
   );
 }
 ```
@@ -212,8 +211,8 @@ if (result.mfaRequired) {
 Manage MFA on an authenticated account:
 
 ```javascript
-const setup = await auth.setupMfa();           // QR code + backup codes
-await auth.enableMfa('123456');                // Confirm with TOTP
+const setup = await auth.setupMfa();           
+await auth.enableMfa('123456');              
 const status = await auth.getMfaStatus();
 await auth.regenerateMfaBackupCodes('123456');
 await auth.disableMfa('currentPassword', '123456');
@@ -222,17 +221,15 @@ await auth.disableMfa('currentPassword', '123456');
 ### Passkeys (WebAuthn)
 
 ```javascript
-// Check RP compatibility
+
 const compat = await auth.getWebAuthnCompatibility();
 
-// Registration (browser WebAuthn API required)
 const { options } = await auth.createPasskeyRegistrationOptions({ deviceName: 'MacBook' });
-// ... pass options to navigator.credentials.create()
+
 await auth.verifyPasskeyRegistration(credential, { deviceName: 'MacBook' });
 
-// Sign-in
 const { options: loginOptions } = await auth.createPasskeyLoginOptions({ email: 'user@example.com' });
-// ... pass loginOptions to navigator.credentials.get()
+
 await auth.verifyPasskeyLogin(credential);
 ```
 
@@ -242,7 +239,7 @@ For redirect-based OAuth flows:
 
 ```javascript
 const { authUrl } = await auth.getOAuthAuthorizationUrl('google', {
-  intent: 'login',                              // 'login' | 'register' | 'link'
+  intent: 'login',                          
   redirectUri: 'https://yourapp.com/callback',
   appId: 'your-app-id',
 });

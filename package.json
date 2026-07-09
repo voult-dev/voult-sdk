@@ -29,7 +29,7 @@
     "magic-link"
   ],
   "author": "Samuel Olabode",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.15.2"
   },

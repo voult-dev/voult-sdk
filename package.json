@@ -35,7 +35,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/voult-dev/voult-sdk.git"
+    "url": "https://github.com/voult-dev/voult-sdk"
   },
   "bugs": {
     "url": "https://github.com/voult-dev/voult-sdk/issues"

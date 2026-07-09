@@ -4,15 +4,15 @@ Official JavaScript SDK for the [Voult Authentication API](https://github.com/vo
 
 ## Features
 
-- 🔐 **Password Authentication** - Sign up and sign in with email/password or username/password
-- ✨ **Passwordless Authentication** - Magic link authentication via email
-- 🔑 **Multi-Factor Authentication** - TOTP enrollment, verification, and backup codes
-- 🪪 **Passkeys (WebAuthn)** - Register and sign in with platform passkeys
-- 🌐 **OAuth** - Direct provider token exchange and redirect-based authorization URLs
-- 🔒 **Secure Session Management** - Automatic token handling, refresh, and storage
-- 🛡️ **CSRF Support** - Optional CSRF token fetching for browser-based clients
-- 🎯 **Tree-shakeable** - Import only what you need
-- 📦 **Zero Configuration** - Works out of the box
+- **Password Authentication** - Sign up and sign in with email/password or username/password
+- **Passwordless Authentication** - Magic link authentication via email
+- **Multi-Factor Authentication** - TOTP enrollment, verification, and backup codes
+- **Passkeys (WebAuthn)** - Register and sign in with platform passkeys
+- **OAuth** - Direct provider token exchange and redirect-based authorization URLs
+- **Secure Session Management** - Automatic token handling, refresh, and storage
+- **CSRF Support** - Optional CSRF token fetching for browser-based clients
+- **Tree-shakeable** - Import only what you need
+- **Zero Configuration** - Works out of the box
 
 ## Installation
 

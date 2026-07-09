@@ -4,19 +4,19 @@ Complete reference of all functions available in the Voult SDK for testing and d
 
 ## Table of Contents
 
-- [Core Client](#-core-client)
-- [Password Authentication - Sign Up](#-password-authentication---sign-up)
-- [Password Authentication - Sign In](#-password-authentication---sign-in)
-- [Passwordless Authentication - Magic Link](#-passwordless-authentication---magic-link)
-- [Session Management](#-session-management)
-- [Validation Utilities](#-validation-utilities)
-- [Error Classes](#-error-classes)
-- [Default Export (Convenient API)](#-convenient-default-export)
-- [Quick Testing Checklist](#-quick-testing-checklist)
+- [Core Client](#core-client)
+- [Password Authentication - Sign Up](#password-authentication---sign-up)
+- [Password Authentication - Sign In](#password-authentication---sign-in)
+- [Passwordless Authentication - Magic Link](#passwordless-authentication---magic-link)
+- [Session Management](#session-management)
+- [Validation Utilities](#validation-utilities)
+- [Error Classes](#error-classes)
+- [Default Export (Convenient API)](#convenient-default-export)
+- [Quick Testing Checklist](#quick-testing-checklist)
 
 ---
 
-## 📦 Core Client
+## Core Client
 
 ### `VoultClient`
 The main HTTP client class for interacting with the Voult API.
@@ -46,7 +46,7 @@ const client = new VoultClient({
 
 ---
 
-## 🔐 Password Authentication - Sign Up
+## Password Authentication - Sign Up
 
 ### `signUpWithEmailAndPassword(email, password, options, client)`
 Register a new user with email and password.
@@ -143,7 +143,7 @@ const { user, token } = await signUpWithUsernameAndPassword(
 
 ---
 
-## 🔓 Password Authentication - Sign In
+## Password Authentication - Sign In
 
 ### `signInWithEmailAndPassword(email, password, client)`
 Authenticate with email and password.
@@ -231,7 +231,7 @@ const { user, accessToken } = await signInWithUsernameAndPassword(
 
 ---
 
-## ✨ Passwordless Authentication - Magic Link
+## Passwordless Authentication - Magic Link
 
 ### `signInWithEmailLink(email, options, client)`
 Send a magic link to the user's email.
@@ -294,7 +294,7 @@ const { user, accessToken, refreshToken } = await verifyEmailLink(token, client)
 
 ---
 
-## 👤 Session Management
+## Session Management
 
 ### `getCurrentUser(client)`
 Get the current authenticated user's profile.
@@ -374,7 +374,7 @@ await deleteUser(client);
 
 ---
 
-## ✅ Validation Utilities
+## Validation Utilities
 
 ### `isValidEmail(email)`
 Check if an email is valid.
@@ -426,7 +426,7 @@ console.log(PASSWORD_REQUIREMENTS_MESSAGE);
 
 ---
 
-## ❌ Error Classes
+## Error Classes
 
 ### Available Error Classes
 
@@ -469,7 +469,7 @@ try {
 
 ---
 
-## 🚀 Convenient Default Export
+## Convenient Default Export
 
 You can use the default export for a simpler API:
 
@@ -499,29 +499,29 @@ auth.VERSION         // SDK version
 
 ---
 
-## 📋 Quick Testing Checklist
+## Quick Testing Checklist
 
 Use this checklist to verify all SDK functions work correctly:
 
 | Function | Description | Test Status |
 |----------|-------------|-------------|
-| `VoultClient` | Create client instance | ⬜ |
-| `signUpWithEmailAndPassword` | Register with email | ⬜ |
-| `signUpWithUsernameAndPassword` | Register with username | ⬜ |
-| `signInWithEmailAndPassword` | Login with email | ⬜ |
-| `signInWithUsernameAndPassword` | Login with username | ⬜ |
-| `signInWithEmailLink` | Send magic link | ⬜ |
-| `verifyEmailLink` | Verify magic link | ⬜ |
-| `getCurrentUser` | Get user profile | ⬜ |
-| `signOut` | Logout user | ⬜ |
-| `deleteUser` | Delete account | ⬜ |
-| `isValidEmail` | Validate email | ⬜ |
-| `isValidPassword` | Validate password | ⬜ |
-| Error classes | Test error handling | ⬜ |
+| `VoultClient` | Create client instance | [ ] |
+| `signUpWithEmailAndPassword` | Register with email | [ ] |
+| `signUpWithUsernameAndPassword` | Register with username | [ ] |
+| `signInWithEmailAndPassword` | Login with email | [ ] |
+| `signInWithUsernameAndPassword` | Login with username | [ ] |
+| `signInWithEmailLink` | Send magic link | [ ] |
+| `verifyEmailLink` | Verify magic link | [ ] |
+| `getCurrentUser` | Get user profile | [ ] |
+| `signOut` | Logout user | [ ] |
+| `deleteUser` | Delete account | [ ] |
+| `isValidEmail` | Validate email | [ ] |
+| `isValidPassword` | Validate password | [ ] |
+| Error classes | Test error handling | [ ] |
 
 ---
 
-## 🔗 Additional Resources
+## Additional Resources
 
 - [README.md](./README.md) - Full SDK documentation
 - [TESTING_GUIDE.md](./TESTING_GUIDE.md) - How to test the SDK locally

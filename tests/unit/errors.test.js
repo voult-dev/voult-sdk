@@ -11,21 +11,24 @@ import {
 } from '../../src/errors.js';
 
 test('creates typed Voult error classes with metadata', () => {
-  const details = { reason: 'locked' };
+  const details = {
+    apiCode: 'INVALID_CREDENTIALS',
+    status: 401,
+    request: { method: 'POST', url: '/api/auth/email-login' },
+  };
+
   const cases = [
     [VoultError, 'Something failed', 'CUSTOM_ERROR', 500, details],
-    [AuthenticationError, 'Invalid credentials', undefined, 401, details],
-    [ValidationError, 'Bad email', undefined, 400, undefined],
-    [NetworkError, 'Connection failed', undefined, null, undefined],
-    [AuthorizationError, 'Forbidden', undefined, 403, details],
-    [ConflictError, 'Already exists', undefined, 409, details],
-    [AccountLockedError, 'Locked', undefined, 423, details],
+    [AuthenticationError, 'Invalid credentials', details],
+    [ValidationError, 'Bad email', 'email'],
+    [NetworkError, 'Connection failed', { apiCode: 'ECONNREFUSED' }],
+    [AuthorizationError, 'Forbidden', details],
+    [ConflictError, 'Already exists', details],
+    [AccountLockedError, 'Locked', details],
   ];
 
-  for (const [ErrorClass, message, code, status, errorDetails] of cases) {
-    const error = code === undefined && errorDetails === undefined
-      ? new ErrorClass(message)
-      : new ErrorClass(message, code ?? errorDetails, status, errorDetails);
+  for (const [ErrorClass, message, ...args] of cases) {
+    const error = new ErrorClass(message, ...args);
 
     assert.equal(error instanceof VoultError, true);
     assert.equal(error.name, ErrorClass.name);
@@ -43,11 +46,37 @@ test('stores field-specific validation metadata', () => {
   assert.equal(error.field, 'email');
 });
 
-test('stores details on typed errors', () => {
-  const details = { provider: 'google' };
-  const error = new AuthorizationError('Not allowed', details);
+test('stores API metadata on typed errors', () => {
+  const details = {
+    apiCode: 'ACCOUNT_DISABLED',
+    status: 403,
+    response: {
+      error: {
+        code: 'ACCOUNT_DISABLED',
+        message: 'This account has been disabled',
+        status: 403,
+      },
+    },
+    request: { method: 'PATCH', url: '/api/user/me', baseURL: 'https://api.voult.dev' },
+  };
+  const error = new AuthorizationError('This account has been disabled', details);
 
   assert.equal(error.code, 'AUTHORIZATION_ERROR');
+  assert.equal(error.apiCode, 'ACCOUNT_DISABLED');
   assert.equal(error.status, 403);
   assert.equal(error.details, details);
+  assert.equal(error.request.method, 'PATCH');
+  assert.match(error.toString(), /AuthorizationError: This account has been disabled/);
+  assert.match(error.toString(), /apiCode=ACCOUNT_DISABLED/);
+  assert.match(error.toString(), /request=PATCH \/api\/user\/me/);
+  assert.deepEqual(error.toJSON(), {
+    name: 'AuthorizationError',
+    message: 'This account has been disabled',
+    code: 'AUTHORIZATION_ERROR',
+    apiCode: 'ACCOUNT_DISABLED',
+    status: 403,
+    request: details.request,
+    fields: undefined,
+    details,
+  });
 });

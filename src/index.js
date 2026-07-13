@@ -128,6 +128,12 @@ export {
   resolveClientArg,
 } from './utils/helpers.js';
 
+export {
+  parseApiErrorResponse,
+  extractValidationFields,
+  buildRequestContext,
+} from './utils/apiError.js';
+
 import { VoultClient } from './client.js';
 import {
   signUpWithUsernameAndPassword as _signupUsername,

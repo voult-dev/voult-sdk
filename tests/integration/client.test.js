@@ -72,6 +72,19 @@ test('VoultClient validates config, injects headers, and maps API errors', async
   const notFoundClient = new VoultClient({ clientId: 'client-id', clientSecret: 'client-secret', baseURL });
   await assert.rejects(
     () => notFoundClient.get('/api/missing'),
-    (error) => error instanceof VoultError && error.status === 404 && error.code === 'NOT_FOUND'
+    (error) => error instanceof VoultError && error.status === 404 && error.apiCode === 'NOT_FOUND'
+  );
+
+  const forbiddenClient = new VoultClient({ clientId: 'client-id', clientSecret: 'client-secret', baseURL });
+  forbiddenClient.setSession({ id: 'user-1', email: 'user@example.com' }, 'forbidden-token', 'refresh-1');
+  await assert.rejects(
+    () => forbiddenClient.patch('/api/user/me', { fullName: 'Updated User' }, { requireAuth: true }),
+    (error) =>
+      error instanceof VoultError &&
+      error.name === 'AuthorizationError' &&
+      error.message === 'This account has been disabled' &&
+      error.apiCode === 'ACCOUNT_DISABLED' &&
+      error.request?.method === 'PATCH' &&
+      error.request?.url === '/api/user/me'
   );
 });

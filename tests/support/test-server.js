@@ -70,8 +70,8 @@ function accessTokenFrom(req) {
 
 function requireAuth(req, res, state) {
   const token = accessTokenFrom(req);
-  if (!VALID_ACCESS_TOKENS.includes(token)) {
-    send(res, 401, { code: 'AUTHENTICATION_ERROR', message: 'Unauthorized' });
+  if (!['signup-token', 'access-1', 'access-2', 'forbidden-token'].includes(token)) {
+    send(res, 401, { error: { code: 'AUTHENTICATION_ERROR', message: 'Unauthorized', status: 401 } });
     return false;
   }
   return true;
@@ -344,7 +344,9 @@ export async function startTestServer() {
         if (req.method === 'GET') {
           if (accessTokenFrom(req) === 'expired-token') {
             state.expiredTokenAttempts += 1;
-            send(res, 401, { code: 'AUTHENTICATION_ERROR', message: 'Expired token' });
+            send(res, 401, {
+              error: { code: 'AUTHENTICATION_ERROR', message: 'Expired token', status: 401 },
+            });
             return;
           }
           if (!requireAuth(req, res, state)) {
@@ -355,6 +357,16 @@ export async function startTestServer() {
         }
 
         if (req.method === 'PATCH') {
+          if (accessTokenFrom(req) === 'forbidden-token') {
+            send(res, 403, {
+              error: {
+                code: 'ACCOUNT_DISABLED',
+                message: 'This account has been disabled',
+                status: 403,
+              },
+            });
+            return;
+          }
           if (!requireAuth(req, res, state)) {
             return;
           }

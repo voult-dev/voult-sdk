@@ -14,6 +14,10 @@ import {
   AccountLockedError
 } from './errors.js';
 import { DEFAULT_BASE_URL, ENDPOINTS } from './constants.js';
+import {
+  parseApiErrorResponse,
+  buildRequestContext,
+} from './utils/apiError.js';
 
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
@@ -255,73 +259,90 @@ export class VoultClient {
    * @throws {VoultError} Appropriate error type
    */
   async handleError(error) {
-    // Network error (no response)
     if (!error.response) {
       throw new NetworkError(
         error.code === 'ECONNREFUSED'
           ? 'Unable to connect to the Voult API. Please check your internet connection.'
-          : 'Network error. Please check your connection and try again.'
+          : 'Network error. Please check your connection and try again.',
+        {
+          apiCode: error.code || 'NETWORK_ERROR',
+          request: buildRequestContext(error.config),
+        }
       );
     }
 
     const { status, data } = error.response;
-    const errorCode = data?.code || data?.error || 'UNKNOWN_ERROR';
-    const message = data?.message || data?.error || 'An unexpected error occurred';
+    const parsed = parseApiErrorResponse(data, status);
+    const details = {
+      apiCode: parsed.apiCode,
+      response: parsed.response,
+      request: buildRequestContext(error.config),
+      status: parsed.status,
+      ...(parsed.fields ? { fields: parsed.fields } : {}),
+    };
 
-    // If access token expired, attempt a single token refresh then retry.
-    // _isRefreshing prevents concurrent/recursive refresh calls.
     if (status === 401 && !this._isRefreshing) {
-      if (this.refreshToken) {
+      if (this.refreshToken && parsed.apiCode !== 'ACCOUNT_LOCKED') {
         this._isRefreshing = true;
         try {
           await this.refreshSession();
           this._isRefreshing = false;
-          // Inject the new token into the original failed request and retry
           error.config.headers['Authorization'] = `Bearer ${this.accessToken}`;
           return this.httpClient.request(error.config);
-        } catch (e) {
+        } catch {
           this._isRefreshing = false;
-          // Refresh failed — clear everything so the app knows to re-login
           this.clearSession();
-          throw new AuthenticationError('Session expired. Please sign in again.');
+          throw new AuthenticationError('Session expired. Please sign in again.', {
+            apiCode: 'SESSION_EXPIRED',
+            request: buildRequestContext(error.config),
+          });
         }
       }
     }
 
-    // Map HTTP status codes to specific error types
+    throw this.createHttpError(status, parsed, details);
+  }
+
+  /**
+   * Map parsed API errors to typed SDK errors.
+   * @private
+   */
+  createHttpError(status, parsed, details) {
+    const { apiCode, message } = parsed;
+
     switch (status) {
       case 400:
-        throw new ValidationError(message);
+        return new ValidationError(message, details);
 
       case 401:
-        if (errorCode === 'ACCOUNT_LOCKED') {
-          throw new AccountLockedError(message);
+        if (apiCode === 'ACCOUNT_LOCKED') {
+          return new AccountLockedError(message, details);
         }
-        throw new AuthenticationError(message);
+        return new AuthenticationError(message, details);
 
       case 403:
-        if (errorCode === 'EMAIL_NOT_VERIFIED') {
-          throw new AuthorizationError('Email not verified. Please verify your email before continuing.');
+        if (apiCode === 'EMAIL_NOT_VERIFIED') {
+          return new AuthorizationError(
+            message || 'Email not verified. Please verify your email before continuing.',
+            details
+          );
         }
-        if (errorCode === 'ACCOUNT_DISABLED') {
-          throw new AuthorizationError('Account is disabled.');
+        if (apiCode === 'ACCOUNT_DISABLED') {
+          return new AuthorizationError(
+            message || 'Account is disabled.',
+            details
+          );
         }
-        throw new AuthorizationError(message);
+        return new AuthorizationError(message, details);
 
       case 409:
-        throw new ConflictError(message);
+        return new ConflictError(message, details);
 
       case 423:
-        throw new AccountLockedError(message);
-
-      case 404:
-      case 500:
-      case 502:
-      case 503:
-        throw new VoultError(message, errorCode, status, data);
+        return new AccountLockedError(message, details);
 
       default:
-        throw new VoultError(message, errorCode, status, data);
+        return new VoultError(message, apiCode, status, details);
     }
   }
 

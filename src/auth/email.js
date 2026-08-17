@@ -34,6 +34,10 @@ export async function verifyEmail(token, options = {}, client) {
     includeClientSecret: false,
   });
 
+  if (client.user) {
+    client.user = { ...client.user, isEmailVerified: true };
+  }
+
   return {
     success: true,
     message: response.message || 'Email verified successfully',

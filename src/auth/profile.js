@@ -17,11 +17,13 @@ function sanitizeUserProfile(user) {
     updatedAt: user.updatedAt,
     isLocked: user.isLocked,
     lastLoginAt: user.lastLoginAt,
-    mfaEnabled: user.mfaEnabled,
   };
 
+  if (user.id) profile.id = user.id;
+  if (user.isEmailVerified != null) profile.isEmailVerified = user.isEmailVerified;
+  if (user.app) profile.app = user.app;
   if (user.username) profile.username = user.username;
-  if (profile.fullName) profile.name = profile.fullName;
+  if (user.mfaEnabled != null) profile.mfaEnabled = user.mfaEnabled;
 
   return profile;
 }
@@ -37,25 +39,22 @@ export async function getCurrentUser(client) {
 
   const profile = await client.get(ENDPOINTS.ME, { requireAuth: true });
 
-  const user = {
+  const user = sanitizeUserProfile({
+    id: profile.id,
     email: profile.email,
     fullName: profile.name ?? profile.fullName,
+    isEmailVerified: profile.isEmailVerified,
+    username: profile.username,
+    mfaEnabled: profile.mfaEnabled,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
     isLocked: profile.isLocked,
     lastLoginAt: profile.lastLoginAt,
-  };
+    app: profile.app,
+  });
 
-  if (profile.username) {
-    user.username = profile.username;
-  }
-
-  if (profile.mfaEnabled != null) {
-    user.mfaEnabled = profile.mfaEnabled;
-  }
-
-  client.user = sanitizeUserProfile(user);
-  return client.user;
+  client.user = user;
+  return user;
 }
 
 /**

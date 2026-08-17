@@ -86,7 +86,9 @@ export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
 }
 
 async function oauthAuth(endpoint, credentials, client) {
-  const response = await client.post(endpoint, credentials);
+  const response = await client.post(endpoint, credentials, {
+    includeClientSecret: false,
+  });
   return applyAuthResponse(client, response);
 }
 

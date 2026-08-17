@@ -53,16 +53,22 @@ export const ENDPOINTS = {
   // OAuth — provider token exchange (legacy/direct)
   GOOGLE_LOGIN: '/api/auth/google/login',
   GOOGLE_REGISTER: '/api/auth/google/register',
+  GOOGLE_AUTHENTICATE: '/api/auth/google/authenticate',
   GITHUB_LOGIN: '/api/auth/github/login',
   GITHUB_REGISTER: '/api/auth/github/register',
+  GITHUB_AUTHENTICATE: '/api/auth/github/authenticate',
   FACEBOOK_LOGIN: '/api/auth/facebook/login',
   FACEBOOK_REGISTER: '/api/auth/facebook/register',
+  FACEBOOK_AUTHENTICATE: '/api/auth/facebook/authenticate',
   LINKEDIN_LOGIN: '/api/auth/linkedin/login',
   LINKEDIN_REGISTER: '/api/auth/linkedin/register',
+  LINKEDIN_AUTHENTICATE: '/api/auth/linkedin/authenticate',
   MICROSOFT_LOGIN: '/api/auth/microsoft/login',
   MICROSOFT_REGISTER: '/api/auth/microsoft/register',
+  MICROSOFT_AUTHENTICATE: '/api/auth/microsoft/authenticate',
   APPLE_LOGIN: '/api/auth/apple/login',
   APPLE_REGISTER: '/api/auth/apple/register',
+  APPLE_AUTHENTICATE: '/api/auth/apple/authenticate',
 
   // OAuth linking
   OAUTH_LINK: (provider) => `/api/oauth/${provider}/link`,

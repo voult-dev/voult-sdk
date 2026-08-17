@@ -7,6 +7,25 @@ import { validateFullName } from '../utils/validation.js';
 import { requireAuthenticated, resolveClientArg } from '../utils/helpers.js';
 import { AuthenticationError } from '../errors.js';
 
+function sanitizeUserProfile(user) {
+  if (!user) return null;
+
+  const profile = {
+    email: user.email,
+    fullName: user.fullName ?? user.name,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    isLocked: user.isLocked,
+    lastLoginAt: user.lastLoginAt,
+    mfaEnabled: user.mfaEnabled,
+  };
+
+  if (user.username) profile.username = user.username;
+  if (profile.fullName) profile.name = profile.fullName;
+
+  return profile;
+}
+
 /**
  * Get the current authenticated user's profile from the API
  * @param {import('../client.js').VoultClient} client
@@ -19,15 +38,12 @@ export async function getCurrentUser(client) {
   const profile = await client.get(ENDPOINTS.ME, { requireAuth: true });
 
   const user = {
-    id: profile.id,
     email: profile.email,
     fullName: profile.name ?? profile.fullName,
-    isEmailVerified: profile.isEmailVerified,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
     isLocked: profile.isLocked,
     lastLoginAt: profile.lastLoginAt,
-    app: profile.app,
   };
 
   if (profile.username) {
@@ -38,8 +54,8 @@ export async function getCurrentUser(client) {
     user.mfaEnabled = profile.mfaEnabled;
   }
 
-  client.user = user;
-  return user;
+  client.user = sanitizeUserProfile(user);
+  return client.user;
 }
 
 /**
@@ -64,11 +80,11 @@ export async function updateProfile(updates = {}, client) {
   );
 
   if (response.user) {
-    client.user = {
+    client.user = sanitizeUserProfile({
       ...client.user,
       ...response.user,
-      fullName: response.user.fullName,
-    };
+      fullName: response.user.fullName ?? response.user.name,
+    });
   } else if (client.user) {
     client.user = { ...client.user, fullName };
   }
@@ -76,7 +92,7 @@ export async function updateProfile(updates = {}, client) {
   return {
     success: true,
     message: response.message || 'Profile updated successfully',
-    user: response.user ?? client.user,
+    user: sanitizeUserProfile(response.user ?? client.user),
   };
 }
 

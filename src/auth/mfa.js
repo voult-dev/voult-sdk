@@ -6,21 +6,29 @@ import { ENDPOINTS } from '../constants.js';
 import { requireAuthenticated, applyAuthResponse, resolveClientArg } from '../utils/helpers.js';
 import { ValidationError } from '../errors.js';
 
-function validateMfaToken(mfaToken, field = 'mfaToken') {
+function normalizeMfaToken(mfaToken, field = 'mfaToken') {
   if (!mfaToken || typeof mfaToken !== 'string') {
     throw new ValidationError('MFA token is required', field);
   }
 
-  const normalized = mfaToken.trim();
-  if (normalized.length < 6 || normalized.length > 16) {
-    throw new ValidationError('MFA token must be 6-16 characters', field);
+  const stripped = mfaToken.trim().replace(/\s+/g, '');
+
+  if (/^\d{6}$/.test(stripped)) {
+    return stripped;
   }
 
-  return normalized;
+  if (/^[A-Fa-f0-9]{8}$/.test(stripped)) {
+    return stripped.toUpperCase();
+  }
+
+  throw new ValidationError(
+    'MFA token must be a 6-digit authenticator code or 8-character backup code',
+    field
+  );
 }
 
 function validateEnrollmentToken(token) {
-  const normalized = validateMfaToken(token, 'token');
+  const normalized = normalizeMfaToken(token, 'token');
   if (!/^\d{6}$/.test(normalized)) {
     throw new ValidationError('Enrollment token must be a 6-digit code', 'token');
   }
@@ -38,7 +46,7 @@ export async function verifyMfaLogin(mfaPendingToken, mfaToken, client) {
     throw new ValidationError('MFA pending token is required', 'mfaPendingToken');
   }
 
-  const normalizedToken = validateMfaToken(mfaToken);
+  const normalizedToken = normalizeMfaToken(mfaToken);
 
   const response = await client.post(ENDPOINTS.MFA_VERIFY, {
     mfaPendingToken,
@@ -113,15 +121,16 @@ export async function enableMfa(token, client) {
 export async function disableMfa(password, mfaToken, client) {
   requireAuthenticated(client);
 
-  if (!password || typeof password !== 'string') {
-    throw new ValidationError('Password is required', 'password');
-  }
+  const normalizedToken = normalizeMfaToken(mfaToken);
 
-  const normalizedToken = validateMfaToken(mfaToken);
+  const body = { mfaToken: normalizedToken };
+  if (typeof password === 'string' && password.length > 0) {
+    body.password = password;
+  }
 
   const response = await client.post(
     ENDPOINTS.MFA_DISABLE,
-    { password, mfaToken: normalizedToken },
+    body,
     { requireAuth: true }
   );
 

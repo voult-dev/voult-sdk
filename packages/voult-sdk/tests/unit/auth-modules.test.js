@@ -61,7 +61,7 @@ import {
   updatePasskey,
   deletePasskey,
 } from '../../src/auth/webauthn.js';
-import { getOAuthAuthorizationUrl } from '../../src/auth/oauth.js';
+import { getOAuthAuthorizationUrl, exchangeOAuthCode } from '../../src/auth/oauth.js';
 import { ENDPOINTS } from '../../src/constants.js';
 import { VoultClient } from '../../src/client.js';
 import { AuthenticationError, ValidationError } from '../../src/errors.js';
@@ -128,6 +128,14 @@ function createFakeClient() {
       }
       if (endpoint === ENDPOINTS.MFA_REGENERATE_BACKUP_CODES) {
         return { message: 'Backup codes regenerated', backupCodes: ['111111', '222222'] };
+      }
+      if (endpoint === ENDPOINTS.OAUTH_EXCHANGE) {
+        return {
+          message: 'OAuth sign-in successful',
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+          user: { id: 'user-1', email: 'oauth@example.com' },
+        };
       }
       if (endpoint === ENDPOINTS.OAUTH_AUTHORIZE('google') || endpoint.startsWith('/api/oauth/')) {
         return {
@@ -848,5 +856,24 @@ test('getOAuthAuthorizationUrl validates provider and request payload', async ()
       headers: { 'X-App-ID': 'app-1' },
       includeClientSecret: false,
     },
+  });
+});
+
+test('exchangeOAuthCode posts the one-time code to Voult', async () => {
+  const client = createFakeClient();
+  Object.defineProperty(client, 'constructor', { value: { name: 'VoultClient' } });
+
+  const result = await exchangeOAuthCode(
+    'otc_test',
+    { redirectUri: 'https://example.com/callback' },
+    client,
+  );
+
+  assert.equal(result.accessToken, 'access-token');
+  assert.deepEqual(client.calls[0], {
+    method: 'post',
+    endpoint: ENDPOINTS.OAUTH_EXCHANGE,
+    body: { code: 'otc_test', redirectUri: 'https://example.com/callback' },
+    options: { includeClientSecret: true },
   });
 });

@@ -81,6 +81,7 @@ export {
 // OAuth
 export {
   getOAuthAuthorizationUrl,
+  exchangeOAuthCode,
   signInWithGoogle,
   signUpWithGoogle,
   authenticateWithGoogle,
@@ -184,6 +185,7 @@ import {
 } from './auth/webauthn.js';
 import {
   getOAuthAuthorizationUrl as _getOAuthAuthorizationUrl,
+  exchangeOAuthCode as _exchangeOAuthCode,
   signInWithGoogle as _googleIn,
   signUpWithGoogle as _googleUp,
   authenticateWithGoogle as _googleAuth,
@@ -288,6 +290,7 @@ export default function voult(config) {
     // OAuth
     getOAuthAuthorizationUrl: (provider, options) =>
       _getOAuthAuthorizationUrl(provider, options, client),
+    exchangeOAuthCode: (code, options) => _exchangeOAuthCode(code, options, client),
     signInWithGoogle: (credentials) => _googleIn(credentials, client),
     signUpWithGoogle: (credentials) => _googleUp(credentials, client),
     authenticateWithGoogle: (credentials) => _googleAuth(credentials, client),

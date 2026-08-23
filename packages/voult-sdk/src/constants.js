@@ -49,6 +49,7 @@ export const ENDPOINTS = {
 
   // OAuth — unified authorization URL flow
   OAUTH_AUTHORIZE: (provider) => `/api/oauth/${provider}/authorize`,
+  OAUTH_EXCHANGE: '/api/oauth/exchange',
 
   // OAuth — provider token exchange (legacy/direct)
   GOOGLE_LOGIN: '/api/auth/google/login',
@@ -90,4 +91,4 @@ export const OAUTH_PROVIDERS = [
   'apple',
 ];
 
-export const OAUTH_INTENTS = ['register', 'login', 'link'];
+export const OAUTH_INTENTS = ['register', 'login', 'link', 'authenticate'];

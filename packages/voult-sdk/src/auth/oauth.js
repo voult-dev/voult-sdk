@@ -27,7 +27,7 @@ function assertOAuthProvider(provider) {
  * Generate an OAuth authorization URL for redirect-based login/register/link flows.
  * @param {string} provider
  * @param {Object} options
- * @param {'register'|'login'|'link'} options.intent
+ * @param {'register'|'login'|'link'|'authenticate'} options.intent
  * @param {string} options.redirectUri
  * @param {string} [options.appId] - App ID (defaults to X-App-ID header via clientId context)
  * @param {string} [options.userId] - Required when intent is `link`
@@ -83,6 +83,39 @@ export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
     expiresInSeconds: response.expiresInSeconds,
     deprecation: response._deprecation,
   };
+}
+
+/**
+ * Exchange a one-time Voult OAuth code (returned to the integrator callback) for tokens.
+ * @param {string} code
+ * @param {Object} options
+ * @param {string} options.redirectUri
+ * @param {import('../client.js').VoultClient} client
+ */
+export async function exchangeOAuthCode(code, options = {}, client) {
+  const resolved = resolveClientArg(options, client);
+  client = resolved.client;
+  options = resolved.options;
+
+  if (!code || typeof code !== 'string') {
+    throw new ValidationError('OAuth exchange code is required', 'code');
+  }
+
+  if (!options.redirectUri) {
+    throw new ValidationError('redirectUri is required', 'redirectUri');
+  }
+
+  if (!isValidUrl(options.redirectUri)) {
+    throw new ValidationError('Invalid redirectUri format. Must be a valid URL.', 'redirectUri');
+  }
+
+  const response = await client.post(
+    ENDPOINTS.OAUTH_EXCHANGE,
+    { code, redirectUri: options.redirectUri },
+    { includeClientSecret: true },
+  );
+
+  return applyAuthResponse(client, response);
 }
 
 async function oauthAuth(endpoint, credentials, client) {

@@ -1,5 +1,5 @@
 {
-  "name": "express",
+  "name": "@voult/express",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "voult-sdk": "^0.0.4"
+  }
 }

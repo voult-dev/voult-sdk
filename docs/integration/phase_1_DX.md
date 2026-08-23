@@ -117,8 +117,8 @@ node -e "import('voult-sdk').then(m => console.log(Object.keys(m)))"
 
 **Tasks:**
 
-- [ ] `package.json`: name `@voult/express`, `peerDependencies` on `express` + `voult-sdk`, dep on `cookie-parser` (if cookie strategy)
-- [ ] Public surface only:
+- [x] `package.json`: name `@voult/express`, `peerDependencies` on `express` + `voult-sdk`, dep on `cookie-parser` (if cookie strategy)
+- [x] Public surface only:
 
 ```js
 export { createVoultRouter } from './router.js';

@@ -12,5 +12,8 @@
   "dependencies": {
     "express": "^5.2.1",
     "voult-sdk": "^0.0.4"
+  },
+  "devDependencies": {
+    "cookie-parser": "^1.4.7"
   }
 }

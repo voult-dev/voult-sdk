@@ -126,8 +126,8 @@ export { createVoultMiddleware } from './middleware.js'; // optional thin helper
 export { loadConfigFromEnv } from './config.js';
 ```
 
-- [ ] Vitest (or Jest) + supertest harness
-- [ ] Prefer TypeScript for public types even if runtime is JS (integrators need autocomplete)
+- [x] Vitest (or Jest) + supertest harness
+- [x] Prefer TypeScript for public types even if runtime is JS (integrators need autocomplete)
 
 **Canonical env names** (implement in Step 3):
 

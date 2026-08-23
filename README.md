@@ -7,7 +7,7 @@ Monorepo for Voult client packages.
 | Package | Path | Description |
 |---------|------|-------------|
 | [`voult-sdk`](./packages/voult-sdk) | `packages/voult-sdk` | Official JavaScript SDK for the Voult Authentication API |
-| [`express`](./packages/express) | `packages/express` | Express BFF (scaffold) |
+| [`@voult/express`](./packages/express) | `packages/express` | Mountable Express BFF for Voult auth |
 
 ## Development
 

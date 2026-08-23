@@ -1,0 +1,7 @@
+tests
+*.test.js
+.env
+.env.*
+coverage
+vitest.config.js
+tsconfig.json

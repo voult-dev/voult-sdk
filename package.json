@@ -1,37 +1,13 @@
 {
-  "name": "voult-sdk",
-  "version": "0.0.4",
-  "description": "Official SDK for Voult Authentication and Authorization API",
-  "type": "module",
-  "main": "./src/index.js",
-  "module": "./src/index.js",
-  "exports": {
-    ".": {
-      "import": "./src/index.js",
-      "default": "./src/index.js"
-    }
-  },
-  "files": [
-    "src"
+  "name": "voult-sdk-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "test": "node --test",
-    "test:unit": "node --test tests/unit/*.test.js",
-    "test:integration": "node --test tests/integration/*.test.js"
-  },
-  "keywords": [
-    "authentication",
-    "authorization",
-    "sdk",
-    "voult",
-    "auth",
-    "jwt",
-    "magic-link"
-  ],
-  "author": "Samuel Olabode",
-  "license": "MIT",
-  "dependencies": {
-    "axios": "^1.15.2"
+    "test": "npm test --workspace=voult-sdk",
+    "test:unit": "npm run test:unit --workspace=voult-sdk",
+    "test:integration": "npm run test:integration --workspace=voult-sdk"
   },
   "repository": {
     "type": "git",
@@ -40,5 +16,6 @@
   "bugs": {
     "url": "https://github.com/voult-dev/voult-sdk/issues"
   },
-  "homepage": "https://github.com/voult-dev/voult-sdk#readme"
+  "homepage": "https://github.com/voult-dev/voult-sdk#readme",
+  "license": "MIT"
 }

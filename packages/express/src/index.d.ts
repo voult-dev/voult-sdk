@@ -31,5 +31,14 @@ export function createVoultMiddleware(options?: CreateVoultRouterOptions): Reque
 declare module 'express-serve-static-core' {
   interface Request {
     voultConfig?: VoultExpressConfig;
+    voult?: {
+      accessToken: string | null;
+      refreshToken: string | null;
+      user: unknown;
+      isAuthenticated(): boolean;
+      getCurrentUser(): unknown;
+      setSession(user: unknown, accessToken: string, refreshToken?: string | null): void;
+      clearSession(): void;
+    };
   }
 }

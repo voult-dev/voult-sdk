@@ -20,7 +20,8 @@ describe('createVoultRouter', () => {
     }).not.toThrow();
 
     const response = await request(app).get('/api/auth/session');
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ authenticated: false, user: null });
   });
 
   it('loads config from env when mounting', async () => {
@@ -50,6 +51,7 @@ describe('createVoultMiddleware', () => {
         clientId: req.voultConfig?.clientId,
         strategy: req.voultConfig?.session?.strategy,
         cookie: req.cookies?.demo,
+        hasClient: Boolean(req.voult),
       });
     });
 
@@ -60,6 +62,7 @@ describe('createVoultMiddleware', () => {
       clientId: 'client-id',
       strategy: 'cookie',
       cookie: 'ok',
+      hasClient: true,
     });
   });
 });

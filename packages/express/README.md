@@ -43,7 +43,26 @@ export { createVoultMiddleware } from './middleware.js';
 export { loadConfigFromEnv } from './config.js';
 ```
 
-Auth routes will be added in a later step. A valid config currently mounts an empty router.
+Auth routes (mount wherever you want, e.g. `/api/auth`):
+
+| Method | Path |
+|--------|------|
+| GET | `/session` |
+| POST | `/register` |
+| POST | `/username-register` |
+| POST | `/email-login` |
+| POST | `/username-login` |
+| POST | `/logout` |
+| POST | `/sessions/refresh` |
+| GET | `/user/me` |
+| PATCH | `/user/me` |
+| POST | `/user/forgot-password` |
+| POST | `/user/reset-password` |
+| GET | `/user/verify-email` |
+| POST | `/mfa/verify` |
+| GET | `/mfa/status` |
+
+Each request gets a fresh `VoultClient` on `req.voult`. Cookie strategy (default) stores tokens in httpOnly cookies; bearer strategy returns tokens in JSON.
 
 ## License
 

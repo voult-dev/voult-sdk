@@ -1,5 +1,7 @@
 import cookieParser from 'cookie-parser';
+import { VoultClient } from 'voult-sdk';
 import { resolveConfig } from './config.js';
+import { applyIncomingSession, attachSessionPersistence } from './tokens.js';
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -14,7 +16,7 @@ function passthrough(_req, _res, next) {
 }
 
 /**
- * Thin helper that parses cookies (cookie strategy) and attaches resolved config.
+ * Per-request Voult client: new instance, restore session, persist before headers.
  *
  * @param {CreateVoultRouterOptions} [options]
  * @returns {RequestHandler}
@@ -35,6 +37,14 @@ export function createVoultMiddleware(options = {}) {
       }
 
       req.voultConfig = config;
+      req.voult = new VoultClient({
+        clientId: config.clientId,
+        clientSecret: config.clientSecret,
+        baseURL: config.baseURL,
+      });
+
+      applyIncomingSession(req, req.voult, config);
+      attachSessionPersistence(req, res, config);
       next();
     });
   }

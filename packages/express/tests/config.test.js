@@ -89,4 +89,86 @@ describe('loadConfigFromEnv', () => {
     expect(config.clientId).toBe('canonical-id');
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it('throws with a dashboard hint when VOULT_CLIENT_ID is missing', () => {
+    expect(() =>
+      loadConfigFromEnv({
+        env: {
+          VOULT_CLIENT_SECRET: 'client-secret',
+        },
+      })
+    ).toThrow(/VOULT_CLIENT_ID[\s\S]*dashboard/i);
+  });
+
+  it('throws when VOULT_CLIENT_SECRET is missing', () => {
+    expect(() =>
+      loadConfigFromEnv({
+        env: {
+          VOULT_CLIENT_ID: 'client-id',
+        },
+      })
+    ).toThrow(/VOULT_CLIENT_SECRET/);
+  });
+
+  it('throws when VOULT_BASE_URL is not an http(s) URL', () => {
+    expect(() =>
+      loadConfigFromEnv({
+        env: {
+          VOULT_CLIENT_ID: 'client-id',
+          VOULT_CLIENT_SECRET: 'client-secret',
+          VOULT_BASE_URL: 'not-a-url',
+        },
+      })
+    ).toThrow(/Invalid VOULT_BASE_URL "not-a-url"/);
+
+    expect(() =>
+      loadConfigFromEnv({
+        env: {
+          VOULT_CLIENT_ID: 'client-id',
+          VOULT_CLIENT_SECRET: 'client-secret',
+          VOULT_BASE_URL: 'ftp://api.voult.dev',
+        },
+      })
+    ).toThrow(/VOULT_BASE_URL/);
+  });
+
+  it('throws in production when cookie strategy has no VOULT_SESSION_SECRET', () => {
+    expect(() =>
+      loadConfigFromEnv({
+        env: {
+          NODE_ENV: 'production',
+          VOULT_CLIENT_ID: 'client-id',
+          VOULT_CLIENT_SECRET: 'client-secret',
+        },
+      })
+    ).toThrow(/VOULT_SESSION_SECRET/);
+  });
+
+  it('allows cookie strategy without a session secret outside production', () => {
+    const config = loadConfigFromEnv({
+      env: {
+        NODE_ENV: 'test',
+        VOULT_CLIENT_ID: 'client-id',
+        VOULT_CLIENT_SECRET: 'client-secret',
+      },
+    });
+
+    expect(config.session.strategy).toBe('cookie');
+    expect(config.sessionSecret).toBeUndefined();
+  });
+
+  it('allows bearer strategy in production without a session secret', () => {
+    const config = loadConfigFromEnv({
+      env: {
+        NODE_ENV: 'production',
+        VOULT_CLIENT_ID: 'client-id',
+        VOULT_CLIENT_SECRET: 'client-secret',
+      },
+      overrides: {
+        session: { strategy: 'bearer' },
+      },
+    });
+
+    expect(config.session.strategy).toBe('bearer');
+  });
 });

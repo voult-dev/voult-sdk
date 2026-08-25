@@ -60,27 +60,88 @@ function trimToUndefined(value) {
   return trimmed === '' ? undefined : trimmed;
 }
 
+const DASHBOARD_URL = 'https://www.voult.dev';
+
+/**
+ * @param {NodeJS.Dict<string | undefined>} env
+ * @returns {string}
+ */
+function resolveNodeEnv(env) {
+  return (
+    trimToUndefined(env.NODE_ENV) ??
+    trimToUndefined(process.env.NODE_ENV) ??
+    'development'
+  );
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} envName
+ * @returns {string}
+ */
+function requireHttpUrl(value, envName) {
+  const raw = trimToUndefined(value);
+  if (!raw) {
+    return DEFAULT_BASE_URL;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    parsed = null;
+  }
+
+  if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+    throw new Error(
+      `[voult] Invalid ${envName} "${raw}". Set it to an absolute http(s) URL, for example https://api.voult.dev or https://staging.voult.dev.`
+    );
+  }
+
+  return raw;
+}
+
 /**
  * @param {VoultExpressConfig} config
+ * @param {NodeJS.Dict<string | undefined>} env
  * @returns {VoultExpressConfig}
  */
-function normalizeConfig(config) {
+function normalizeConfig(config, env) {
   const clientId = trimToUndefined(config.clientId);
   const clientSecret = trimToUndefined(config.clientSecret);
+  const sessionSecret = trimToUndefined(config.sessionSecret);
+  const strategy = config.session?.strategy === 'bearer' ? 'bearer' : 'cookie';
 
-  if (!clientId || !clientSecret) {
-    throw new Error('VOULT_CLIENT_ID and VOULT_CLIENT_SECRET are required');
+  if (!clientId) {
+    throw new Error(
+      `[voult] Missing VOULT_CLIENT_ID. Create an App in the Voult dashboard (${DASHBOARD_URL}), then copy the Client ID into your .env as VOULT_CLIENT_ID.`
+    );
+  }
+
+  if (!clientSecret) {
+    throw new Error(
+      `[voult] Missing VOULT_CLIENT_SECRET. Copy the Client Secret from your App in the Voult dashboard (${DASHBOARD_URL}) into your .env as VOULT_CLIENT_SECRET. The secret is required for this Express BFF and must not be sent to the browser.`
+    );
+  }
+
+  const baseURL = requireHttpUrl(config.baseURL, 'VOULT_BASE_URL');
+  const appUrl = trimToUndefined(config.appUrl)
+    ? requireHttpUrl(config.appUrl, 'VOULT_APP_URL')
+    : undefined;
+
+  if (strategy === 'cookie' && !sessionSecret && resolveNodeEnv(env) === 'production') {
+    throw new Error(
+      '[voult] Cookie sessions require VOULT_SESSION_SECRET in production. Add a long random value to your .env (openssl rand -hex 32). If the client stores tokens itself, set session.strategy to "bearer" instead.'
+    );
   }
 
   return {
-    baseURL: trimToUndefined(config.baseURL) || DEFAULT_BASE_URL,
+    baseURL,
     clientId,
     clientSecret,
-    sessionSecret: trimToUndefined(config.sessionSecret),
-    appUrl: trimToUndefined(config.appUrl),
-    session: {
-      strategy: config.session?.strategy === 'bearer' ? 'bearer' : 'cookie',
-    },
+    sessionSecret,
+    appUrl,
+    session: { strategy },
   };
 }
 
@@ -95,16 +156,19 @@ export function loadConfigFromEnv(options = {}) {
   const env = options.env ?? process.env;
   const overrides = options.overrides ?? {};
 
-  return normalizeConfig({
-    baseURL: overrides.baseURL ?? readEnvValue(env, ENV_FIELDS.baseURL),
-    clientId: overrides.clientId ?? readEnvValue(env, ENV_FIELDS.clientId),
-    clientSecret: overrides.clientSecret ?? readEnvValue(env, ENV_FIELDS.clientSecret),
-    sessionSecret: overrides.sessionSecret ?? readEnvValue(env, ENV_FIELDS.sessionSecret),
-    appUrl: overrides.appUrl ?? readEnvValue(env, ENV_FIELDS.appUrl),
-    session: {
-      strategy: overrides.session?.strategy,
+  return normalizeConfig(
+    {
+      baseURL: overrides.baseURL ?? readEnvValue(env, ENV_FIELDS.baseURL),
+      clientId: overrides.clientId ?? readEnvValue(env, ENV_FIELDS.clientId),
+      clientSecret: overrides.clientSecret ?? readEnvValue(env, ENV_FIELDS.clientSecret),
+      sessionSecret: overrides.sessionSecret ?? readEnvValue(env, ENV_FIELDS.sessionSecret),
+      appUrl: overrides.appUrl ?? readEnvValue(env, ENV_FIELDS.appUrl),
+      session: {
+        strategy: overrides.session?.strategy,
+      },
     },
-  });
+    env
+  );
 }
 
 /**
@@ -113,12 +177,14 @@ export function loadConfigFromEnv(options = {}) {
  * @returns {VoultExpressConfig}
  */
 export function resolveConfig(options = {}) {
+  const env = options.env ?? process.env;
+
   if (options.config) {
-    return normalizeConfig(options.config);
+    return normalizeConfig(options.config, env);
   }
 
   return loadConfigFromEnv({
-    env: options.env,
+    env,
     overrides: options.overrides,
   });
 }

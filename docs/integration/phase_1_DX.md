@@ -151,10 +151,10 @@ Legacy aliases (`CLIENT_ID`, etc.) → one-time deprecation `warn` at startup. D
 
 **Tasks:**
 
-- [ ] Implement validator with **fix-oriented** messages (where to find Client ID, when secret is required)
-- [ ] Support `overrides` for tests and advanced integrators
-- [ ] Default `session.strategy` to `'cookie'`
-- [ ] Reject cookie strategy without `VOULT_SESSION_SECRET` in production
+- [x] Implement validator with **fix-oriented** messages (where to find Client ID, when secret is required)
+- [x] Support `overrides` for tests and advanced integrators
+- [x] Default `session.strategy` to `'cookie'`
+- [x] Reject cookie strategy without `VOULT_SESSION_SECRET` in production
 
 **Verify (unit tests):**
 

@@ -8,6 +8,7 @@ Monorepo for Voult client packages.
 |---------|------|-------------|
 | [`voult-sdk`](./packages/voult-sdk) | `packages/voult-sdk` | Official JavaScript SDK for the Voult Authentication API |
 | [`@voult/express`](./packages/express) | `packages/express` | Mountable Express BFF for Voult auth |
+| [`@voult/cli`](./packages/cli) | `packages/cli` | `voult init` — scaffolds `.env` for `@voult/express` |
 
 ## Development
 

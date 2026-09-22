@@ -1,10 +1,10 @@
 {
   "name": "@voult/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "voult init — scaffold a .env for @voult/express in under a minute",
   "type": "module",
   "bin": {
-    "voult": "./bin/voult.js"
+    "voult": "bin/voult.js"
   },
   "main": "./src/index.js",
   "files": [
@@ -28,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/voult-dev/voult-sdk",
+    "url": "git+https://github.com/voult-dev/voult-sdk.git",
     "directory": "packages/cli"
   },
   "bugs": {

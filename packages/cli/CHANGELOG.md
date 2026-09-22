@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.1.1
+
+- No functional changes — republished alongside the `@voult/sdk` rename.
+
 ## 0.1.0
 
 Initial release.

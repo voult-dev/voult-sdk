@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/express` are documented here.
 
+## 0.1.1
+
+- Depend on `@voult/sdk` instead of `voult-sdk` (peer dependency updated to `>=0.1.0`).
+
 ## 0.1.0
 
 Initial release.

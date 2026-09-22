@@ -1,4 +1,4 @@
-import { DEFAULT_BASE_URL } from 'voult-sdk';
+import { DEFAULT_BASE_URL } from '@voult/sdk';
 
 /**
  * @typedef {import('./index.js').VoultExpressConfig} VoultExpressConfig

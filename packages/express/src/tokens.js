@@ -7,7 +7,7 @@ const REFRESH_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * @typedef {import('./index.js').VoultExpressConfig} VoultExpressConfig
- * @typedef {import('voult-sdk').VoultClient} VoultClient
+ * @typedef {import('@voult/sdk').VoultClient} VoultClient
  */
 
 /**

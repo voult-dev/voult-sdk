@@ -1,4 +1,4 @@
-import { VoultError } from 'voult-sdk';
+import { VoultError } from '@voult/sdk';
 
 /**
  * Normalize SDK and unexpected errors into a stable JSON shape.

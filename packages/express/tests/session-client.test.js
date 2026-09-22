@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { VoultClient } from 'voult-sdk';
+import { VoultClient } from '@voult/sdk';
 import { createVoultMiddleware, createVoultRouter } from '../src/index.js';
 import { startTestServer } from '../../voult-sdk/tests/support/test-server.js';
 

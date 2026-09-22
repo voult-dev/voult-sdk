@@ -17,13 +17,13 @@ Official JavaScript SDK for the [Voult Authentication API](https://github.com/vo
 ## Installation
 
 ```bash
-npm install voult-sdk
+npm install @voult/sdk
 ```
 
 ## Quick Start
 
 ```javascript
-import voult from 'voult-sdk';
+import voult from '@voult/sdk';
 
 // Initialize the SDK
 const auth = voult({
@@ -61,7 +61,7 @@ await auth.signOut();
 ### Initialization
 
 ```javascript
-import voult from 'voult-sdk';
+import voult from '@voult/sdk';
 
 const auth = voult({
   clientId: 'app_abc123',
@@ -76,7 +76,7 @@ const auth = voult({
 #### Sign Up with Email
 
 ```javascript
-import { signUpWithEmailAndPassword } from 'voult-sdk';
+import { signUpWithEmailAndPassword } from '@voult/sdk';
 
 try {
   const { user, token } = await signUpWithEmailAndPassword(
@@ -97,7 +97,7 @@ try {
 #### Sign Up with Username
 
 ```javascript
-import { signUpWithUsernameAndPassword } from 'voult-sdk';
+import { signUpWithUsernameAndPassword } from '@voult/sdk';
 
 // Note: Voult API uses email-based registration
 // This function requires an email in the options
@@ -115,7 +115,7 @@ const { user, token } = await signUpWithUsernameAndPassword(
 #### Sign In with Email
 
 ```javascript
-import { signInWithEmailAndPassword } from 'voult-sdk';
+import { signInWithEmailAndPassword } from '@voult/sdk';
 
 const { user, accessToken, refreshToken } = await signInWithEmailAndPassword(
   'user@example.com',
@@ -127,7 +127,7 @@ const { user, accessToken, refreshToken } = await signInWithEmailAndPassword(
 #### Sign In with Username
 
 ```javascript
-import { signInWithUsernameAndPassword } from 'voult-sdk';
+import { signInWithUsernameAndPassword } from '@voult/sdk';
 
 // Username must be in email format for Voult API
 const { user, accessToken } = await signInWithUsernameAndPassword(
@@ -142,7 +142,7 @@ const { user, accessToken } = await signInWithUsernameAndPassword(
 #### Send Magic Link
 
 ```javascript
-import { signInWithEmailLink } from 'voult-sdk';
+import { signInWithEmailLink } from '@voult/sdk';
 
 await signInWithEmailLink(
   'user@example.com',
@@ -156,7 +156,7 @@ await signInWithEmailLink(
 #### Verify Magic Link
 
 ```javascript
-import { verifyEmailLink } from 'voult-sdk';
+import { verifyEmailLink } from '@voult/sdk';
 
 // After user clicks the magic link, extract token from URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -170,7 +170,7 @@ const { user, accessToken, refreshToken } = await verifyEmailLink(token, client)
 #### Get Current User
 
 ```javascript
-import { getCurrentUser } from 'voult-sdk';
+import { getCurrentUser } from '@voult/sdk';
 
 const profile = await getCurrentUser(client);
 console.log(profile.email, profile.fullName, profile.isEmailVerified);
@@ -179,7 +179,7 @@ console.log(profile.email, profile.fullName, profile.isEmailVerified);
 #### Sign Out
 
 ```javascript
-import { signOut } from 'voult-sdk';
+import { signOut } from '@voult/sdk';
 
 await signOut(client);
 // Session is automatically cleared
@@ -188,7 +188,7 @@ await signOut(client);
 #### Delete User
 
 ```javascript
-import { deleteUser } from 'voult-sdk';
+import { deleteUser } from '@voult/sdk';
 
 await deleteUser(client);
 ```
@@ -269,7 +269,7 @@ import {
   ConflictError,
   AccountLockedError,
   NetworkError
-} from 'voult-sdk';
+} from '@voult/sdk';
 
 try {
   await auth.signInWithEmailAndPassword('user@example.com', 'wrongpassword');
@@ -302,7 +302,7 @@ Passwords must meet the following requirements:
 You can validate passwords before sending to the API:
 
 ```javascript
-import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from 'voult-sdk';
+import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@voult/sdk';
 
 if (!isValidPassword(password)) {
   console.log(PASSWORD_REQUIREMENTS_MESSAGE);
@@ -317,7 +317,7 @@ if (!isValidPassword(password)) {
 The core HTTP client that handles all API communication.
 
 ```javascript
-import { VoultClient } from 'voult-sdk';
+import { VoultClient } from '@voult/sdk';
 
 const client = new VoultClient({
   clientId: 'app_abc123',
@@ -335,7 +335,7 @@ client.getCurrentUser();
 ### Default Export (Convenient Usage)
 
 ```javascript
-import voult from 'voult-sdk';
+import voult from '@voult/sdk';
 
 const auth = voult({ clientId: '...', clientSecret: '...' });
 
@@ -362,7 +362,7 @@ import {
   signOut,
   ValidationError,
   AuthenticationError,
-} from 'voult-sdk';
+} from '@voult/sdk';
 ```
 
 ## Configuration Options

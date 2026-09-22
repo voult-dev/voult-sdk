@@ -1,5 +1,5 @@
 import cookieParser from 'cookie-parser';
-import { VoultClient } from 'voult-sdk';
+import { VoultClient } from '@voult/sdk';
 import { resolveConfig } from './config.js';
 import { applyIncomingSession, attachSessionPersistence } from './tokens.js';
 

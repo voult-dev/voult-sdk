@@ -12,7 +12,7 @@ import {
   updateProfile,
   verifyEmail,
   verifyMfaLogin,
-} from 'voult-sdk';
+} from '@voult/sdk';
 import { catchAsync } from './catchAsync.js';
 import { requireAuth } from './requireAuth.js';
 import { toPublicAuthResult } from './tokens.js';

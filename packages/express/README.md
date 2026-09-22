@@ -5,10 +5,10 @@ Mountable Express BFF for the [Voult Authentication API](https://github.com/voul
 ## Install
 
 ```bash
-npm install @voult/express voult-sdk express
+npm install @voult/express @voult/sdk express
 ```
 
-`express` and `voult-sdk` are peer dependencies.
+`express` and `@voult/sdk` are peer dependencies.
 
 ## Quick start
 

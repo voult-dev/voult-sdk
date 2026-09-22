@@ -1,6 +1,6 @@
 /**
  * Voult SDK - Authentication made simple
- * @module voult-sdk
+ * @module @voult/sdk
  * @see https://github.com/voult-dev/voult
  */
 

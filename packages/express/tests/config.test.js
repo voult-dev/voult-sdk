@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_BASE_URL } from 'voult-sdk';
+import { DEFAULT_BASE_URL } from '@voult/sdk';
 import { loadConfigFromEnv } from '../src/index.js';
 
 afterEach(() => {

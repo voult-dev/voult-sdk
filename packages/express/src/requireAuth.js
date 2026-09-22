@@ -1,4 +1,4 @@
-import { AuthenticationError } from 'voult-sdk';
+import { AuthenticationError } from '@voult/sdk';
 
 /**
  * Block handlers that need an end-user session.

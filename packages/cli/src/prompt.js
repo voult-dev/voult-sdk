@@ -65,6 +65,13 @@ export function askSecret(question) {
     return ask(question);
   }
 
+  // The shared readline interface (used by `ask()` before/after this call)
+  // keeps its own keypress listener on stdin as long as it's open, and it
+  // competes with the raw listener below for the same bytes (corrupts the
+  // masked echo). Close it first so we have exclusive control, then let the
+  // next `ask()` lazily recreate a fresh one via getSharedInterface().
+  closePrompts();
+
   return new Promise((resolve, reject) => {
     const stdin = process.stdin;
     process.stdout.write(`${question}: `);
@@ -72,7 +79,10 @@ export function askSecret(question) {
     let input = '';
     const cleanup = () => {
       stdin.setRawMode(false);
-      stdin.pause();
+      // Not stdin.pause(): a paused stream never delivers keystrokes to the
+      // *next* readline interface's rl.question(), which just hangs forever
+      // waiting on input that never arrives — this is what made init look
+      // like it silently died right after the secret prompt.
       stdin.removeListener('data', onData);
     };
 

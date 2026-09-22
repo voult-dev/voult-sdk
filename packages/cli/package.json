@@ -9,7 +9,8 @@
   "main": "./src/index.js",
   "files": [
     "bin",
-    "src"
+    "src",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=18"

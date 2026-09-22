@@ -34,5 +34,8 @@
   "bugs": {
     "url": "https://github.com/voult-dev/voult-sdk/issues"
   },
-  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/cli#readme"
+  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/cli#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

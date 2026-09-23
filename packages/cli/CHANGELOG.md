@@ -4,7 +4,9 @@ All notable changes to `@voult/cli` are documented here.
 
 ## 0.1.3
 
-- **Pre-launch:** `voult init`'s default `VOULT_BASE_URL` answer is now `https://staging.voult.dev` instead of `https://api.voult.dev`, which isn't deployed yet — accepting the old default silently wrote a dead URL into `.env`. Phase 21 (launch) will switch this to the real production URL once it exists.
+- **`voult init` no longer asks for `VOULT_BASE_URL` at all.** `@voult/express` already falls back to the Voult API's default URL when it's unset, so the question was redundant — and its "default" duplicated a value that also lives in `@voult/sdk`, where the two could silently drift apart (which is exactly what caused the previous bug on this line, below). Integrators only need to set `VOULT_BASE_URL` themselves for self-hosted/local-dev setups; it's still listed (empty) in `.env.example` for that.
+- Fixed the printed "smoke test" curl commands, which pointed at `VOULT_BASE_URL` (the Voult API itself) instead of the integrator's own local BFF server (`http://localhost:3000`, matching the `@voult/express` snippet printed just above them) — copy-pasting them as shown would bypass the server you just mounted the router on.
+- Superseded: the previous entry below (defaulting the prompt to `https://staging.voult.dev`) — the prompt is gone entirely now, so there's nothing left to default. The underlying pre-launch default still lives in `@voult/sdk`'s `DEFAULT_BASE_URL` and still needs to flip at launch (`docs/phases/PHASE_21_LAUNCH.md`).
 
 ## 0.1.2
 

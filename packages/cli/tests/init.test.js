@@ -37,7 +37,6 @@ function fakeIo({ answers = {}, secret = 'shh-secret' } = {}) {
 test('writes .env with prompted values and a generated session secret for the cookie strategy', async () => {
   const { io } = fakeIo({
     answers: {
-      VOULT_BASE_URL: 'https://staging.voult.dev',
       VOULT_CLIENT_ID: 'app_123',
       'Session strategy — cookie or bearer': 'cookie',
     },
@@ -49,7 +48,6 @@ test('writes .env with prompted values and a generated session secret for the co
   assert.equal(result.strategy, 'cookie');
 
   const env = fs.readFileSync(path.join(cwd, '.env'), 'utf8');
-  assert.match(env, /VOULT_BASE_URL=https:\/\/staging\.voult\.dev/);
   assert.match(env, /VOULT_CLIENT_ID=app_123/);
   assert.match(env, /VOULT_CLIENT_SECRET=shh-secret/);
   assert.match(env, /VOULT_SESSION_SECRET=[0-9a-f]{64}/);
@@ -57,6 +55,22 @@ test('writes .env with prompted values and a generated session secret for the co
   const example = fs.readFileSync(path.join(cwd, '.env.example'), 'utf8');
   assert.doesNotMatch(example, /shh-secret/);
   assert.match(example, /^VOULT_CLIENT_SECRET=$/m);
+});
+
+test('does not prompt for or write VOULT_BASE_URL — @voult/express defaults it', async () => {
+  const { io, logs } = fakeIo({
+    answers: { VOULT_CLIENT_ID: 'app_123', 'Session strategy — cookie or bearer': 'cookie' },
+  });
+
+  await runInit([], io);
+
+  const env = fs.readFileSync(path.join(cwd, '.env'), 'utf8');
+  assert.doesNotMatch(env, /VOULT_BASE_URL/);
+  assert.ok(logs.some((line) => line.includes('VOULT_BASE_URL was not written')));
+
+  // .env.example still lists it as an available (optional) override.
+  const example = fs.readFileSync(path.join(cwd, '.env.example'), 'utf8');
+  assert.match(example, /^VOULT_BASE_URL=$/m);
 });
 
 test('bearer strategy skips generating a session secret', async () => {

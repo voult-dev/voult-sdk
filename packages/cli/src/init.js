@@ -53,7 +53,9 @@ export async function runInit(argv, io = {}) {
 
   let baseURL, clientId, clientSecret, strategyInput;
   try {
-    baseURL = await promptText('VOULT_BASE_URL', { default: 'https://api.voult.dev' });
+    // PRE-LAUNCH: api.voult.dev isn't deployed yet; Phase 21 must swap this
+    // for the real production URL once it exists.
+    baseURL = await promptText('VOULT_BASE_URL', { default: 'https://staging.voult.dev' });
     clientId = await promptText('VOULT_CLIENT_ID');
     clientSecret = await promptSecret('VOULT_CLIENT_SECRET');
     strategyInput = await promptText('Session strategy — cookie or bearer', { default: 'cookie' });

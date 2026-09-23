@@ -80,7 +80,10 @@ export const ENDPOINTS = {
   SET_PASSWORD: '/api/me/set-password',
 };
 
-export const DEFAULT_BASE_URL = 'https://api.voult.dev';
+// PRE-LAUNCH: api.voult.dev isn't deployed yet — this points at staging so
+// `voult init`'s default (and any client that omits `baseURL`) actually
+// resolves. Phase 21 (launch) must switch this to the real production URL.
+export const DEFAULT_BASE_URL = 'https://staging.voult.dev';
 
 export const OAUTH_PROVIDERS = [
   'google',

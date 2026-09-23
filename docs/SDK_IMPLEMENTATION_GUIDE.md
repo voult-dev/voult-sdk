@@ -71,7 +71,7 @@ Returns an object with all SDK methods bound to one `VoultClient` instance.
 |--------|------|----------|-------------|
 | `clientId` | `string` | Yes | App client ID (`X-Client-Id`) |
 | `clientSecret` | `string` | Yes | App client secret (`X-Client-Secret`) |
-| `baseURL` | `string` | No | API base URL (default: `https://api.voult.dev`) |
+| `baseURL` | `string` | No | API base URL (default: `https://staging.voult.dev` — pre-launch; will become the real production URL at launch) |
 
 ### Named export — `VoultClient`
 
@@ -787,4 +787,4 @@ Before going to production, configure in [voult.dev](https://www.voult.dev):
 
 - [Voult API repository](https://github.com/DevOlabode/voult)
 - [SDK source](https://github.com/DevOlabode/voult-sdk)
-- Live API: [https://api.voult.dev](https://api.voult.dev)
+- Live API (pre-launch): [https://staging.voult.dev](https://staging.voult.dev) — will move to the real production domain at launch

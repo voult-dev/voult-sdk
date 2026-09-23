@@ -18,7 +18,7 @@ npx voult init
 
 Prompts for:
 
-- `VOULT_BASE_URL` (defaults to `https://api.voult.dev`)
+- `VOULT_BASE_URL` (defaults to `https://staging.voult.dev` — pre-launch; will become the real production URL at launch)
 - `VOULT_CLIENT_ID` — from your App in the [Voult dashboard](https://www.voult.dev/dashboard)
 - `VOULT_CLIENT_SECRET` — masked input, never echoed or logged
 - Session strategy (`cookie` default, or `bearer`)

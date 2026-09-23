@@ -371,7 +371,7 @@ import {
 |--------|------|----------|-------------|
 | `clientId` | string | Yes | Your application's client ID from Voult dashboard |
 | `clientSecret` | string | Yes | Your application's client secret |
-| `baseURL` | string | No | API base URL (defaults to `https://api.voult.dev`) |
+| `baseURL` | string | No | API base URL (defaults to `https://staging.voult.dev` — pre-launch; will become the real production URL at launch) |
 | `csrfToken` | string | No | CSRF token for state-changing routes |
 | `useCookies` | boolean | No | Send cookies with requests (needed for CSRF in browsers) |
 

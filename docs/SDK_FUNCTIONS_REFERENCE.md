@@ -27,7 +27,7 @@ import { VoultClient } from 'voult-sdk';
 const client = new VoultClient({
   clientId: 'your-client-id',
   clientSecret: 'your-client-secret',
-  baseURL: 'https://api.voult.dev' // optional, defaults to this
+  baseURL: 'https://staging.voult.dev' // optional, defaults to this pre-launch (see DEFAULT_BASE_URL)
 });
 ```
 
@@ -36,7 +36,7 @@ const client = new VoultClient({
 |--------|------|----------|-------------|
 | `clientId` | string | Yes | Your application's client ID from Voult dashboard |
 | `clientSecret` | string | Yes | Your application's client secret |
-| `baseURL` | string | No | API base URL (defaults to `https://api.voult.dev`) |
+| `baseURL` | string | No | API base URL (defaults to `https://staging.voult.dev` — pre-launch; will become the real production URL at launch) |
 
 **Instance Methods:**
 - `setSession(user, accessToken, refreshToken)` - Store user session

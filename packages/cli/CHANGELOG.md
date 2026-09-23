@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.1.3
+
+- **Pre-launch:** `voult init`'s default `VOULT_BASE_URL` answer is now `https://staging.voult.dev` instead of `https://api.voult.dev`, which isn't deployed yet — accepting the old default silently wrote a dead URL into `.env`. Phase 21 (launch) will switch this to the real production URL once it exists.
+
 ## 0.1.2
 
 - **Fix:** `voult init` would silently exit after the `VOULT_CLIENT_SECRET` prompt without writing `.env`, or hang forever on the session-strategy prompt. Cause: the masked secret prompt took over raw stdin without releasing the shared readline interface used by the surrounding text prompts, and then left stdin paused — the next prompt's `rl.question()` had no way to ever receive input. `askSecret` now closes the shared interface before taking raw control and no longer leaves stdin paused afterward.

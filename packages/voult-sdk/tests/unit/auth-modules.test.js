@@ -444,6 +444,30 @@ test('profile and account functions require authentication and update local user
   assert.equal(client.isAuthenticated(), false);
 });
 
+test('signOut surfaces server errors but still clears the local session', async () => {
+  const signedIn = () => {
+    const client = createFakeClient();
+    client.setSession({ id: 'user-1' }, 'access-1', 'refresh-1');
+    return client;
+  };
+
+  const failing = signedIn();
+  failing.post = async () => {
+    throw Object.assign(new Error('Unsafe update operator: revokedAt'), { status: 500 });
+  };
+  await assert.rejects(() => signOut(failing), /Unsafe update operator/);
+  assert.equal(failing.isAuthenticated(), false);
+
+  const expired = signedIn();
+  expired.post = async () => {
+    throw Object.assign(new Error('expired'), { status: 401 });
+  };
+  const result = await signOut(expired);
+  assert.equal(result.success, true);
+  assert.match(result.warning, /invalid\/expired/);
+  assert.equal(expired.isAuthenticated(), false);
+});
+
 test('sign out and delete user clear local sessions', async () => {
   const client = createFakeClient();
 

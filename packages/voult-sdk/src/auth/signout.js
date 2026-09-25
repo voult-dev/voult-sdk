@@ -23,16 +23,16 @@ export async function signOut(client) {
     response = await client.post(ENDPOINTS.LOGOUT, {}, { requireAuth: true });
   } catch (err) {
     client.clearSession();
-    const warning =
-      err?.status === 401 || err?.status === 403 || err?.name === 'AuthenticationError'
-        ? 'Remote token invalid/expired; local session cleared.'
-        : undefined;
-
-    return {
-      success: true,
-      message: 'Logged out successfully',
-      ...(warning ? { warning } : {}),
-    };
+    // A dead token means there's nothing left to revoke. Anything else (5xx,
+    // network) means the server-side session may still be live — surface it.
+    if (err?.status === 401 || err?.status === 403 || err?.name === 'AuthenticationError') {
+      return {
+        success: true,
+        message: 'Logged out successfully',
+        warning: 'Remote token invalid/expired; local session cleared.',
+      };
+    }
+    throw err;
   }
 
   client.clearSession();

@@ -29,7 +29,7 @@ Writes:
 - `.env` — real values, `0600` permissions, never overwritten without `--force`
 - `.env.example` — the same keys (including `VOULT_BASE_URL`, left empty) with empty values, safe to commit
 
-For the `cookie` strategy it also generates `VOULT_SESSION_SECRET` (32 random bytes) — you never have to pick one yourself.
+It writes your choice as `VOULT_SESSION_STRATEGY` (read by `@voult/express` 0.1.2+). For the `cookie` strategy it also generates `VOULT_SESSION_SECRET` (32 random bytes) — you never have to pick one yourself.
 
 ```bash
 voult init --force   # overwrite an existing .env

@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/sdk` are documented here.
 
+## 0.1.4
+
+- `PASSWORD_REQUIREMENTS_MESSAGE` now names the accepted special characters (`@$!%*?&`) and says other symbols aren't allowed. The old "…and special character" wording made passwords like `Str0ng!Pass#2026` fail with no hint that `#` was the problem. The rule itself is unchanged and still matches the API.
+
 ## 0.1.3
 
 - **Fix:** `signOut` no longer reports success when the API fails to log out. It used to swallow every error and return `{ success: true }`, which hid a server-side 500 that left refresh tokens un-revoked. It still clears the local session in all cases and still returns success (with a `warning`) on 401/403, where the token is already dead; any other error is now rethrown so callers (including `@voult/express`'s `/logout`) can report it.

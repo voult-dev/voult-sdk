@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.1.6
+
+- `voult init` now writes the chosen session strategy as `VOULT_SESSION_STRATEGY`. Before, picking `bearer` only skipped the session secret — `@voult/express` still ran in cookie mode. Needs `@voult/express` 0.1.2+.
+
 ## 0.1.5
 
 - **Fix:** `voult init --help` ran init (prompting and writing `.env`) instead of printing help. `-h`/`--help` anywhere in the args now prints help and exits.

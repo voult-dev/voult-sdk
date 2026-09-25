@@ -51,6 +51,7 @@ test('writes .env with prompted values and a generated session secret for the co
   assert.match(env, /VOULT_CLIENT_ID=app_123/);
   assert.match(env, /VOULT_CLIENT_SECRET=shh-secret/);
   assert.match(env, /VOULT_SESSION_SECRET=[0-9a-f]{64}/);
+  assert.match(env, /^VOULT_SESSION_STRATEGY=cookie$/m);
 
   const example = fs.readFileSync(path.join(cwd, '.env.example'), 'utf8');
   assert.doesNotMatch(example, /shh-secret/);
@@ -82,6 +83,7 @@ test('bearer strategy skips generating a session secret', async () => {
 
   assert.equal(result.strategy, 'bearer');
   const env = fs.readFileSync(path.join(cwd, '.env'), 'utf8');
+  assert.match(env, /^VOULT_SESSION_STRATEGY=bearer$/m);
   assert.doesNotMatch(env, /VOULT_SESSION_SECRET/);
 });
 

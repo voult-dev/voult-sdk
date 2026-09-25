@@ -157,6 +157,29 @@ describe('loadConfigFromEnv', () => {
     expect(config.sessionSecret).toBeUndefined();
   });
 
+  it('reads VOULT_SESSION_STRATEGY from env, case-insensitively', () => {
+    const config = loadConfigFromEnv({
+      env: { VOULT_CLIENT_ID: 'id', VOULT_CLIENT_SECRET: 'secret', VOULT_SESSION_STRATEGY: 'Bearer' },
+    });
+    expect(config.session).toEqual({ strategy: 'bearer' });
+  });
+
+  it('lets an override win over VOULT_SESSION_STRATEGY', () => {
+    const config = loadConfigFromEnv({
+      env: { VOULT_CLIENT_ID: 'id', VOULT_CLIENT_SECRET: 'secret', VOULT_SESSION_STRATEGY: 'bearer' },
+      overrides: { session: { strategy: 'cookie' } },
+    });
+    expect(config.session).toEqual({ strategy: 'cookie' });
+  });
+
+  it('throws on an unknown VOULT_SESSION_STRATEGY instead of silently using cookie', () => {
+    expect(() =>
+      loadConfigFromEnv({
+        env: { VOULT_CLIENT_ID: 'id', VOULT_CLIENT_SECRET: 'secret', VOULT_SESSION_STRATEGY: 'bearr' },
+      })
+    ).toThrow(/Invalid VOULT_SESSION_STRATEGY "bearr"/);
+  });
+
   it('allows bearer strategy in production without a session secret', () => {
     const config = loadConfigFromEnv({
       env: {

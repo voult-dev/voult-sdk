@@ -12,6 +12,7 @@ const ENV_FIELDS = {
   clientSecret: { canonical: 'VOULT_CLIENT_SECRET', aliases: ['CLIENT_SECRET'] },
   sessionSecret: { canonical: 'VOULT_SESSION_SECRET', aliases: ['SESSION_SECRET'] },
   appUrl: { canonical: 'VOULT_APP_URL', aliases: ['APP_URL'] },
+  sessionStrategy: { canonical: 'VOULT_SESSION_STRATEGY', aliases: [] },
 };
 
 const warnedLegacyAliases = new Set();
@@ -110,7 +111,13 @@ function normalizeConfig(config, env) {
   const clientId = trimToUndefined(config.clientId);
   const clientSecret = trimToUndefined(config.clientSecret);
   const sessionSecret = trimToUndefined(config.sessionSecret);
-  const strategy = config.session?.strategy === 'bearer' ? 'bearer' : 'cookie';
+  const requestedStrategy = trimToUndefined(config.session?.strategy)?.toLowerCase() ?? 'cookie';
+  if (requestedStrategy !== 'cookie' && requestedStrategy !== 'bearer') {
+    throw new Error(
+      `[voult] Invalid VOULT_SESSION_STRATEGY "${config.session.strategy}". Use "cookie" (default, httpOnly cookies) or "bearer" (tokens returned in JSON).`
+    );
+  }
+  const strategy = requestedStrategy;
 
   if (!clientId) {
     throw new Error(
@@ -131,7 +138,7 @@ function normalizeConfig(config, env) {
 
   if (strategy === 'cookie' && !sessionSecret && resolveNodeEnv(env) === 'production') {
     throw new Error(
-      '[voult] Cookie sessions require VOULT_SESSION_SECRET in production. Add a long random value to your .env (openssl rand -hex 32). If the client stores tokens itself, set session.strategy to "bearer" instead.'
+      '[voult] Cookie sessions require VOULT_SESSION_SECRET in production. Add a long random value to your .env (openssl rand -hex 32). If the client stores tokens itself, set VOULT_SESSION_STRATEGY=bearer instead.'
     );
   }
 
@@ -164,7 +171,7 @@ export function loadConfigFromEnv(options = {}) {
       sessionSecret: overrides.sessionSecret ?? readEnvValue(env, ENV_FIELDS.sessionSecret),
       appUrl: overrides.appUrl ?? readEnvValue(env, ENV_FIELDS.appUrl),
       session: {
-        strategy: overrides.session?.strategy,
+        strategy: overrides.session?.strategy ?? readEnvValue(env, ENV_FIELDS.sessionStrategy),
       },
     },
     env

@@ -31,7 +31,7 @@ test('validates email, password, username, url, and token formats', () => {
   assert.equal(isValidUrl('https://example.com/callback'), true);
   assert.equal(isValidUrl('not-a-url'), false);
 
-  assert.equal(PASSWORD_REQUIREMENTS_MESSAGE, 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+  assert.equal(PASSWORD_REQUIREMENTS_MESSAGE, 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character from @$!%*?& (only letters, numbers, and @$!%*?& are allowed)');
 });
 
 test('validate helpers throw ValidationError for invalid input', () => {

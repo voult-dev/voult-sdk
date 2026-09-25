@@ -77,6 +77,7 @@ export async function runInit(argv, io = {}) {
   const values = {
     VOULT_CLIENT_ID: clientId,
     VOULT_CLIENT_SECRET: clientSecret,
+    VOULT_SESSION_STRATEGY: strategy,
   };
 
   if (strategy === 'cookie') {

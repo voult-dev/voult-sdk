@@ -29,7 +29,8 @@ app.listen(3000);
 VOULT_BASE_URL=
 VOULT_CLIENT_ID=
 VOULT_CLIENT_SECRET=
-VOULT_SESSION_SECRET=   # cookie strategy (default)
+VOULT_SESSION_STRATEGY= # cookie (default) or bearer
+VOULT_SESSION_SECRET=   # cookie strategy only
 VOULT_APP_URL=          # optional
 ```
 

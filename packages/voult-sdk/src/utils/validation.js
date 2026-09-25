@@ -24,7 +24,7 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
  * Password requirements message
  */
 export const PASSWORD_REQUIREMENTS_MESSAGE = 
-  'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character';
+  'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character from @$!%*?& (only letters, numbers, and @$!%*?& are allowed)';
 
 /**
  * Validates an email address format

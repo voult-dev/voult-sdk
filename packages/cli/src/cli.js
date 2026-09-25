@@ -20,7 +20,7 @@ Options:
 export async function runCli(argv, io = {}) {
   const [command, ...rest] = argv;
 
-  if (!command || command === '-h' || command === '--help') {
+  if (!command || [command, ...rest].some((a) => a === '-h' || a === '--help')) {
     (io.log ?? console.log)(HELP);
     return;
   }

@@ -27,7 +27,7 @@ function fakeIo({ answers = {}, secret = 'shh-secret' } = {}) {
     io: {
       cwd,
       log: (msg) => logs.push(msg),
-      ask: async (question) => answers[question] ?? '',
+      ask: async (question) => ({ VOULT_CLIENT_ID: 'app_123', ...answers })[question] ?? '',
       askSecret: async () => secret,
     },
     logs,

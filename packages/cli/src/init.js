@@ -64,6 +64,14 @@ export async function runInit(argv, io = {}) {
   } finally {
     closePrompts();
   }
+  clientId = clientId.trim();
+  clientSecret = clientSecret.trim();
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      `VOULT_CLIENT_ID and VOULT_CLIENT_SECRET are both required — copy them from your App in ${DASHBOARD_URL}. Nothing was written.`
+    );
+  }
+
   const strategy = strategyInput.trim().toLowerCase() === 'bearer' ? 'bearer' : 'cookie';
 
   const values = {

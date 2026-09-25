@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.1.5
+
+- **Fix:** `voult init --help` ran init (prompting and writing `.env`) instead of printing help. `-h`/`--help` anywhere in the args now prints help and exits.
+- **Fix:** `voult init` accepted a blank Client ID/Secret and wrote a `.env` that only failed later at server startup. It now refuses and writes nothing.
+- Added the MIT `LICENSE` file to the published package.
+
 ## 0.1.3
 
 - **`voult init` no longer asks for `VOULT_BASE_URL` at all.** `@voult/express` already falls back to the Voult API's default URL when it's unset, so the question was redundant — and its "default" duplicated a value that also lives in `@voult/sdk`, where the two could silently drift apart (which is exactly what caused the previous bug on this line, below). Integrators only need to set `VOULT_BASE_URL` themselves for self-hosted/local-dev setups; it's still listed (empty) in `.env.example` for that.

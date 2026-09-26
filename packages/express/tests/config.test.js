@@ -214,4 +214,11 @@ describe('loadConfigFromEnv', () => {
 
     expect(config.session.strategy).toBe('bearer');
   });
+
+  it('links to the dashboard of the Voult it is configured for', () => {
+    expect(() => loadConfigFromEnv({ env: { VOULT_CLIENT_SECRET: 's' } }))
+      .toThrow(`${new URL('/dashboard', DEFAULT_BASE_URL).href}`);
+    expect(() => loadConfigFromEnv({ env: { VOULT_BASE_URL: 'https://voult.mycompany.test', VOULT_CLIENT_SECRET: 's' } }))
+      .toThrow('https://voult.mycompany.test/dashboard');
+  });
 });

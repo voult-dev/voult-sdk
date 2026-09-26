@@ -18,7 +18,7 @@ npx voult init
 
 Prompts for:
 
-- `VOULT_CLIENT_ID` — from your App in the [Voult dashboard](https://www.voult.dev/dashboard)
+- `VOULT_CLIENT_ID` — from your App in the [Voult dashboard](https://staging.voult.dev/dashboard) (the preview; production at launch)
 - `VOULT_CLIENT_SECRET` — masked input, never echoed or logged
 - Session strategy (`cookie` default, or `bearer`)
 

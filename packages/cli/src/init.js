@@ -3,7 +3,10 @@ import path from 'node:path';
 import { buildEnvExampleFile, buildEnvFile, generateSessionSecret } from './env.js';
 import { ask, askSecret, closePrompts } from './prompt.js';
 
-const DASHBOARD_URL = 'https://www.voult.dev/dashboard';
+// PRE-LAUNCH: same host as @voult/sdk's DEFAULT_BASE_URL (tests/init.test.js keeps them in sync;
+// Phase 21 flips both). Each Voult instance serves its dashboard at /dashboard.
+export const DEFAULT_VOULT_URL = 'https://staging.voult.dev';
+const dashboardUrl = () => new URL('/dashboard', process.env.VOULT_BASE_URL || DEFAULT_VOULT_URL).href;
 const LOCAL_PORT = 3000;
 
 // The integrator's own BFF server, not the Voult API — @voult/express is
@@ -50,7 +53,7 @@ export async function runInit(argv, io = {}) {
   }
 
   log('Create an App in the Voult dashboard to get your Client ID and Secret:');
-  log(`  ${DASHBOARD_URL}\n`);
+  log(`  ${dashboardUrl()}\n`);
 
   let clientId, clientSecret, strategyInput;
   try {
@@ -68,7 +71,7 @@ export async function runInit(argv, io = {}) {
   clientSecret = clientSecret.trim();
   if (!clientId || !clientSecret) {
     throw new Error(
-      `VOULT_CLIENT_ID and VOULT_CLIENT_SECRET are both required — copy them from your App in ${DASHBOARD_URL}. Nothing was written.`
+      `VOULT_CLIENT_ID and VOULT_CLIENT_SECRET are both required — copy them from your App in ${dashboardUrl()}. Nothing was written.`
     );
   }
 

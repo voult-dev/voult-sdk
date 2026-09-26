@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, afterEach, before, test } from 'node:test';
-import { runInit } from '../src/init.js';
+import { DEFAULT_VOULT_URL, runInit } from '../src/init.js';
+import { DEFAULT_BASE_URL } from '../../voult-sdk/src/constants.js';
 
 let cwd;
 
@@ -115,4 +116,11 @@ test('never logs the client secret value', async () => {
   await runInit([], io);
 
   assert.ok(logs.every((line) => !line.includes('super-secret-value')));
+});
+
+test('points at the same Voult as @voult/sdk (dashboard link can\'t drift)', async () => {
+  assert.equal(DEFAULT_VOULT_URL, DEFAULT_BASE_URL);
+  const { io, logs } = fakeIo({ answers: { VOULT_CLIENT_ID: 'app_123' } });
+  await runInit(['--force'], io);
+  assert.ok(logs.some((line) => line.includes(`${DEFAULT_BASE_URL}/dashboard`)));
 });

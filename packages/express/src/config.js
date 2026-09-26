@@ -62,7 +62,8 @@ function trimToUndefined(value) {
   return trimmed === '' ? undefined : trimmed;
 }
 
-const DASHBOARD_URL = 'https://www.voult.dev';
+// Each Voult instance serves its own developer dashboard at /dashboard.
+const dashboardUrl = (baseURL) => new URL('/dashboard', baseURL).href;
 
 /**
  * @param {NodeJS.Dict<string | undefined>} env
@@ -135,20 +136,20 @@ function normalizeConfig(config, env) {
     );
   }
   const strategy = requestedStrategy;
+  const baseURL = requireHttpUrl(config.baseURL, 'VOULT_BASE_URL');
 
   if (!clientId) {
     throw new Error(
-      `[voult] Missing VOULT_CLIENT_ID. Create an App in the Voult dashboard (${DASHBOARD_URL}), then copy the Client ID into your .env as VOULT_CLIENT_ID.`
+      `[voult] Missing VOULT_CLIENT_ID. Create an App in the Voult dashboard (${dashboardUrl(baseURL)}), then copy the Client ID into your .env as VOULT_CLIENT_ID.`
     );
   }
 
   if (!clientSecret) {
     throw new Error(
-      `[voult] Missing VOULT_CLIENT_SECRET. Copy the Client Secret from your App in the Voult dashboard (${DASHBOARD_URL}) into your .env as VOULT_CLIENT_SECRET. The secret is required for this Express BFF and must not be sent to the browser.`
+      `[voult] Missing VOULT_CLIENT_SECRET. Copy the Client Secret from your App in the Voult dashboard (${dashboardUrl(baseURL)}) into your .env as VOULT_CLIENT_SECRET. The secret is required for this Express BFF and must not be sent to the browser.`
     );
   }
 
-  const baseURL = requireHttpUrl(config.baseURL, 'VOULT_BASE_URL');
   const appUrl = trimToUndefined(config.appUrl)
     ? requireHttpUrl(config.appUrl, 'VOULT_APP_URL')
     : undefined;

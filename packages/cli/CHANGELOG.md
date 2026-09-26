@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.1
+
+- `voult init` now links to the dashboard of the Voult it targets (`https://staging.voult.dev/dashboard` during the preview, or `$VOULT_BASE_URL/dashboard`). 0.2.0 linked `www.voult.dev/dashboard`, which is the landing site and returns 404.
+
 ## 0.2.0
 
 - **New: `voult doctor`** checks packages, `.env`, session secret, leftover provider variables, API reachability, SDK version, credentials, the OAuth callback allowlist, https in production, and provider setup. Each problem comes with a fix. `--json` for CI, `--callback-url` to check a specific callback; exit code 1 when anything fails. Never prints secrets.

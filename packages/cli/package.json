@@ -1,6 +1,6 @@
 {
   "name": "@voult/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "voult init + voult doctor: scaffold and check a .env for @voult/express",
   "type": "module",
   "bin": {

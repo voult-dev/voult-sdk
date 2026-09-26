@@ -41,6 +41,8 @@ export interface CreateVoultRouterOptions extends LoadConfigFromEnvOptions {
 export function loadConfigFromEnv(options?: LoadConfigFromEnvOptions): VoultExpressConfig;
 export function createVoultRouter(options?: CreateVoultRouterOptions): Router;
 export function createVoultMiddleware(options?: CreateVoultRouterOptions): RequestHandler;
+/** 401 JSON unless the request has a Voult session (renews an expired access cookie first). Needs createVoultMiddleware() before it. */
+export const requireAuth: RequestHandler;
 
 declare module 'express-serve-static-core' {
   interface Request {

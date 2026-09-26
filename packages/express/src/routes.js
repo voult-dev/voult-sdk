@@ -15,8 +15,13 @@ import {
 } from '@voult/sdk';
 import { catchAsync } from './catchAsync.js';
 import { requireAuth } from './requireAuth.js';
-import { cookieOptions, readCookie, toPublicAuthResult } from './tokens.js';
-import { COOKIE_MFA_PENDING } from './oauth.js';
+import {
+  cookieOptions,
+  readCookie,
+  renewSessionFromRefreshCookie,
+  toPublicAuthResult,
+} from './tokens.js';
+import { COOKIE_MFA_PENDING, MFA_PENDING_MAX_AGE_MS } from './oauth.js';
 
 /**
  * @param {import('express').Request} req
@@ -24,6 +29,11 @@ import { COOKIE_MFA_PENDING } from './oauth.js';
  * @param {object} result
  */
 function sendAuthResult(req, res, result) {
+  // Park the MFA pending token server-side too (as hosted OAuth does), so /mfa/verify needs only
+  // the code and a page reload doesn't lose the sign-in. The JSON still carries it for older clients.
+  if (result?.mfaRequired && result.mfaPendingToken && req.voultConfig?.session?.strategy === 'cookie') {
+    res.cookie(COOKIE_MFA_PENDING, result.mfaPendingToken, cookieOptions(req.voultConfig, { maxAge: MFA_PENDING_MAX_AGE_MS }));
+  }
   res.json(toPublicAuthResult(req, result));
 }
 
@@ -35,8 +45,10 @@ export function registerAuthRoutes(router) {
     '/session',
     catchAsync(async (req, res) => {
       const client = req.voult;
+      await renewSessionFromRefreshCookie(req, res);
+
       if (!client?.accessToken) {
-        // An OAuth sign-in that stopped at MFA: the page should show the code prompt.
+        // A sign-in that stopped at MFA: the page should show the code prompt.
         const mfaPending = Boolean(readCookie(req, COOKIE_MFA_PENDING));
         res.json({ authenticated: false, user: null, ...(mfaPending && { mfaPending: true }) });
         return;

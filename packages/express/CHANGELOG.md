@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/express` are documented here.
 
+## 0.2.1
+
+- **Fix:** `GET /session` reported a signed-in user as signed out once the 1-hour access cookie expired, even with a valid 30-day refresh cookie. It now renews quietly (and clears the cookies if the refresh token is dead).
+- **New export: `requireAuth`** to protect your own routes (`app.use(createVoultMiddleware()); app.get('/api/orders', requireAuth, …)`). It renews an expired access cookie from the refresh cookie first (so protected calls don't start failing an hour into a session), answers `401` JSON itself, and throws a clear setup error if `createVoultMiddleware()` isn't mounted.
+- Password sign-ins that need MFA now also park the pending token in the httpOnly `voult_mfa_pending` cookie (as hosted OAuth already did), so `POST /mfa/verify { mfaToken }` works without the page holding the token, and survives a reload. The JSON response still includes `mfaPendingToken`.
+
 ## 0.2.0
 
 - **New: hosted OAuth in the router.** `createVoultRouter()` now also serves `GET /oauth/providers`, `GET /oauth/:provider/start` and `GET /oauth/callback`. Provider credentials stay in the Voult dashboard; this server needs no `GOOGLE_*`/`GITHUB_*` variables. Supports `intent=authenticate|login|register|link` and a relative `returnTo`.

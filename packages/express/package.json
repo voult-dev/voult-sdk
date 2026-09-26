@@ -1,6 +1,6 @@
 {
   "name": "@voult/express",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mountable Express BFF for Voult authentication",
   "type": "module",
   "main": "./src/index.js",

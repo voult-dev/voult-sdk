@@ -43,7 +43,23 @@ Legacy aliases (`CLIENT_ID`, `CLIENT_SECRET`, `BASE_URL`, `SESSION_SECRET`, `APP
 export { createVoultRouter } from './router.js';
 export { createVoultMiddleware } from './middleware.js';
 export { loadConfigFromEnv } from './config.js';
+export { requireAuth } from './requireAuth.js';
 ```
+
+### Protect your own routes
+
+```js
+import { createVoultMiddleware, createVoultRouter, requireAuth } from '@voult/express';
+
+app.use(createVoultMiddleware());              // req.voult on every request
+app.use('/api/auth', createVoultRouter());
+app.get('/api/orders', requireAuth, (req, res) => {
+  const user = req.voult.getCurrentUser();     // { id, email, … }
+  res.json({ orders: [], user });
+});
+```
+
+`requireAuth` answers `401` JSON when nobody is signed in, and renews an expired access cookie from the refresh cookie first.
 
 Auth routes (mount wherever you want, e.g. `/api/auth`):
 

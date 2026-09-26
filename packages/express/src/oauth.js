@@ -17,7 +17,7 @@ export const COOKIE_OAUTH = 'voult_oauth';
 export const COOKIE_MFA_PENDING = 'voult_mfa_pending';
 
 const OAUTH_COOKIE_MAX_AGE_MS = 10 * 60 * 1000; // matches Voult's signed state lifetime
-const MFA_PENDING_MAX_AGE_MS = 5 * 60 * 1000;
+export const MFA_PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const PROVIDERS_CACHE_MS = 60 * 1000;
 const INTENTS = ['authenticate', 'login', 'register', 'link'];
 

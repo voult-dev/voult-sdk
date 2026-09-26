@@ -199,6 +199,61 @@ describe('Phase 1 auth routes (cookie strategy)', () => {
   });
 });
 
+describe('0.2.1 session fixes (cookie strategy)', () => {
+  const cookieValue = (res, name) =>
+    res.headers['set-cookie'].map((c) => c.split(';')[0]).find((c) => c.startsWith(`${name}=`));
+
+  it('GET /session renews an expired access cookie from the refresh cookie', async () => {
+    const { app, server, state } = await mountApp();
+    try {
+      const login = await request(app).post('/api/auth/email-login').send({ email: 'user@example.com', password: PASSWORD });
+      const refreshOnly = cookieValue(login, 'voult_refresh');
+      const userCookie = cookieValue(login, 'voult_user');
+
+      // An hour later the access cookie is gone; the 30-day refresh + user cookies remain.
+      const session = await request(app).get('/api/auth/session').set('Cookie', `${refreshOnly}; ${userCookie}`);
+      expect(session.body).toMatchObject({ authenticated: true, user: { email: 'user@example.com' } });
+
+      // Without the user cookie it still recovers, by fetching /user/me.
+      const noUser = await request(app).get('/api/auth/session').set('Cookie', refreshOnly);
+      expect(noUser.body.authenticated).toBe(true);
+      expect(state.refreshCount).toBe(2);
+      expect(cookieValue(session, 'voult_access')).toMatch(/access-2/);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('GET /session with a dead refresh cookie reports signed out and clears cookies', async () => {
+    const { app, server } = await mountApp();
+    try {
+      const session = await request(app).get('/api/auth/session').set('Cookie', 'voult_refresh=revoked-token');
+      expect(session.body).toEqual({ authenticated: false, user: null });
+      expect(session.headers['set-cookie'].find((c) => c.startsWith('voult_refresh='))).toMatch(/Expires=Thu, 01 Jan 1970/);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('password MFA parks the pending token in a cookie; /mfa/verify needs only the code', async () => {
+    const { app, server, state } = await mountApp();
+    try {
+      const agent = request.agent(app);
+      const login = await agent.post('/api/auth/email-login').send({ email: 'mfa@example.com', password: PASSWORD });
+      expect(login.body.mfaRequired).toBe(true);
+      expect(login.headers['set-cookie'].join(';')).toMatch(/voult_mfa_pending=.*HttpOnly/);
+      expect((await agent.get('/api/auth/session')).body.mfaPending).toBe(true);
+
+      const verified = await agent.post('/api/auth/mfa/verify').send({ mfaToken: '123456' });
+      expect(verified.status).toBe(200);
+      expect(state.requests.find((r) => r.path === '/api/auth/mfa/verify').body.mfaPendingToken).toBe('mfa-pending-token');
+      expect((await agent.get('/api/auth/session')).body.authenticated).toBe(true);
+    } finally {
+      server.close();
+    }
+  });
+});
+
 describe('Phase 1 auth routes (bearer strategy)', () => {
   it('returns tokens in the body instead of cookies', async () => {
     const { app, server } = await mountApp('bearer');

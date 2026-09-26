@@ -1,3 +1,5 @@
+import { refreshSession } from '@voult/sdk';
+
 export const COOKIE_ACCESS = 'voult_access';
 export const COOKIE_REFRESH = 'voult_refresh';
 export const COOKIE_USER = 'voult_user';
@@ -38,7 +40,7 @@ export function readCookie(req, name) {
  * @param {unknown} value
  * @returns {object | null}
  */
-function parseUserCookie(value) {
+export function parseUserCookie(value) {
   if (!value) {
     return null;
   }
@@ -180,4 +182,32 @@ export function toPublicAuthResult(req, result) {
 
   const { accessToken, refreshToken, token, ...rest } = result;
   return rest;
+}
+
+/**
+ * The access cookie lives 1h, the refresh cookie 30 days: when only the refresh cookie is
+ * left, get a new access token instead of treating the user as signed out. New cookies are
+ * written when the response goes out (attachSessionPersistence). A dead refresh token
+ * clears the session cookies.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export async function renewSessionFromRefreshCookie(req, res) {
+  const client = req.voult;
+  const config = req.voultConfig;
+  if (!client || client.accessToken || config?.session?.strategy !== 'cookie') return;
+
+  const refreshToken = readCookie(req, COOKIE_REFRESH);
+  if (typeof refreshToken !== 'string' || !refreshToken) return;
+
+  client.refreshToken = refreshToken;
+  try {
+    await refreshSession(client);
+    // The SDK only counts a client as signed in with a user object: reuse the (30-day)
+    // user cookie, or {} so the caller can fetch /user/me.
+    client.user = client.user ?? parseUserCookie(readCookie(req, COOKIE_USER)) ?? {};
+  } catch {
+    client.clearSession();
+    clearSessionCookies(res, config);
+  }
 }

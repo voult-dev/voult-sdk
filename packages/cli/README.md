@@ -36,6 +36,37 @@ voult init --force   # overwrite an existing .env
 voult --help
 ```
 
+## `voult doctor`
+
+Checks a project's setup before the first sign-in: run it in the folder with your `.env`.
+
+```bash
+npx voult doctor                   # human-readable
+npx voult doctor --json            # for CI; exit code 1 if anything fails
+npx voult doctor --callback-url https://api.myapp.com/api/auth/oauth/callback
+```
+
+It loads `@voult/express` and `@voult/sdk` **from your project**, so `.env` is validated by the same code your
+server runs. It never prints secret values.
+
+| Check | Fails / warns when | Fix it shows |
+|---|---|---|
+| packages | `@voult/express` / `@voult/sdk` not installed | `npm install …` |
+| env | `.env` doesn't validate (missing ID/secret, bad URL, unknown strategy) | the server's own error message |
+| session-secret | cookie sessions and `VOULT_SESSION_SECRET` missing/short (fails in production, warns in dev) | `openssl rand -hex 32` |
+| stray-env | `.env` still has `GOOGLE_*`, `GITHUB_*`, … (warning) | configure providers in the dashboard instead |
+| reachable | `VOULT_BASE_URL` doesn't answer `/api/meta` | check the URL / network |
+| version | your `@voult/sdk` is older than the API supports | `npm install @voult/sdk@latest` |
+| credentials | the client ID/secret are rejected | copy them from the dashboard again |
+| callback | your OAuth callback isn't on the app's allowlist (warns if the list is empty and you're on localhost) | the exact URL to add |
+| https | production callback over plain http | https, `trust proxy`, or `VOULT_OAUTH_CALLBACK_URL` |
+| providers | a provider is switched on without credentials (warns if none are on) | which provider page to fix |
+
+The callback it checks is `VOULT_OAUTH_CALLBACK_URL`, else `--callback-url`, else
+`http://localhost:$PORT/api/auth/oauth/callback` (PORT defaults to 3000).
+
+Requires Node 20.12+.
+
 ## License
 
 MIT

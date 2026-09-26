@@ -2,6 +2,13 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.0
+
+- **New: `voult doctor`** checks packages, `.env`, session secret, leftover provider variables, API reachability, SDK version, credentials, the OAuth callback allowlist, https in production, and provider setup. Each problem comes with a fix. `--json` for CI, `--callback-url` to check a specific callback; exit code 1 when anything fails. Never prints secrets.
+- Doctor validates `.env` with the project's own `@voult/express` (`loadConfigFromEnv`) and talks to Voult with the project's `@voult/sdk` (0.2.0+ for the API checks; older SDKs are reported, not crashed on).
+- `voult init` writes `VOULT_OAUTH_CALLBACK_URL` into `.env.example` (optional) and suggests running `voult doctor` afterwards.
+- **Requires Node 20.12+** (uses `util.parseEnv`; Node 18 is end-of-life).
+
 ## 0.1.6
 
 - `voult init` now writes the chosen session strategy as `VOULT_SESSION_STRATEGY`. Before, picking `bearer` only skipped the session secret — `@voult/express` still ran in cookie mode. Needs `@voult/express` 0.1.2+.

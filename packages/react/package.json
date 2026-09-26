@@ -1,0 +1,57 @@
+{
+  "name": "@voult/react",
+  "version": "0.1.0",
+  "description": "React session state, sign-in actions and OAuth buttons for apps using @voult/express",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "src",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "keywords": [
+    "voult",
+    "react",
+    "authentication",
+    "oauth",
+    "hooks"
+  ],
+  "author": "Samuel Olabode",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "@voult/sdk": "^0.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "jsdom": "^30.1.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vitest": "^3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voult-dev/voult-sdk.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/voult-dev/voult-sdk/issues"
+  },
+  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/react#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

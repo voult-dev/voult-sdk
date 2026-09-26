@@ -100,6 +100,7 @@ export async function runInit(argv, io = {}) {
   log(SERVER_SNIPPET);
   log('Smoke test once your server is running:\n');
   log(SMOKE_TEST_COMMANDS);
+  log('\nThen check everything (credentials, callback URL, providers):\n\n  npx voult doctor');
 
   return { wrote: true, strategy };
 }

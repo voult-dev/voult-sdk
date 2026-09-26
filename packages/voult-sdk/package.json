@@ -1,6 +1,6 @@
 {
   "name": "@voult/sdk",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Official SDK for Voult Authentication and Authorization API",
   "type": "module",
   "main": "./src/index.js",
@@ -9,6 +9,10 @@
     ".": {
       "import": "./src/index.js",
       "default": "./src/index.js"
+    },
+    "./validation": {
+      "import": "./src/utils/validation.js",
+      "default": "./src/utils/validation.js"
     }
   },
   "files": [

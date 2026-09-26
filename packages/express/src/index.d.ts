@@ -12,7 +12,20 @@ export interface VoultExpressConfig {
   clientSecret: string;
   sessionSecret?: string;
   appUrl?: string;
+  /** Override the computed hosted-OAuth callback URL (e.g. behind a proxy). */
+  oauthCallbackUrl?: string;
+  oauth?: VoultOAuthPaths;
   session?: VoultSessionConfig;
+}
+
+/** Where hosted OAuth sends the browser, relative to `appUrl`. Each must start with "/". */
+export interface VoultOAuthPaths {
+  /** Default `/`. After sign-in (unless `returnTo` was given) or linking. */
+  successPath?: string;
+  /** Default `/mfa`. User has MFA: prompt for a code and POST /mfa/verify { mfaToken }. */
+  mfaPath?: string;
+  /** Default `/login`. Receives `?voult_error=<CODE>&voult_error_description=<text>`. */
+  errorPath?: string;
 }
 
 export interface LoadConfigFromEnvOptions {
@@ -22,6 +35,7 @@ export interface LoadConfigFromEnvOptions {
 
 export interface CreateVoultRouterOptions extends LoadConfigFromEnvOptions {
   config?: VoultExpressConfig;
+  oauth?: VoultOAuthPaths;
 }
 
 export function loadConfigFromEnv(options?: LoadConfigFromEnvOptions): VoultExpressConfig;

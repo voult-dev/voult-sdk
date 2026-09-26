@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import voult from '../../src/index.js';
@@ -18,7 +19,7 @@ test('named exports and default export run a complete password and magic-link fl
   t.after(() => server.close());
 
   const auth = voult({ clientId: 'client-id', clientSecret: 'client-secret', baseURL });
-  assert.equal(auth.VERSION, '0.3.0');
+  assert.equal(auth.VERSION, JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version);
   assert.equal(typeof auth.client.request, 'function');
   assert.equal(typeof auth.signUpWithEmailAndPassword, 'function');
 

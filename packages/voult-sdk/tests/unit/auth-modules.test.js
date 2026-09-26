@@ -62,6 +62,7 @@ import {
   deletePasskey,
 } from '../../src/auth/webauthn.js';
 import { getOAuthAuthorizationUrl, exchangeOAuthCode } from '../../src/auth/oauth.js';
+import { getApiMeta, getAppInfo } from '../../src/auth/meta.js';
 import { ENDPOINTS } from '../../src/constants.js';
 import { VoultClient } from '../../src/client.js';
 import { AuthenticationError, ValidationError } from '../../src/errors.js';
@@ -674,12 +675,23 @@ test('OAuth linking functions validate providers and use authenticated endpoints
     status: 400,
   });
 
-  const linked = await linkOAuthProvider('GOOGLE', client);
-  assert.deepEqual(linked, { redirectUrl: undefined });
+  await assert.rejects(() => linkOAuthProvider('google', client), {
+    name: 'ValidationError',
+    field: 'redirectUri',
+  });
+
+  const linked = await linkOAuthProvider(
+    'GOOGLE',
+    { redirectUri: 'https://example.com/api/auth/oauth/callback', state: 'nonce-1' },
+    client,
+  );
+  assert.equal(linked.authUrl, 'https://oauth.example.test/google');
+  assert.equal(linked.redirectUrl, linked.authUrl);
+  assert.equal(linked.intent, 'link');
   assert.deepEqual(client.calls[0], {
     method: 'post',
     endpoint: ENDPOINTS.OAUTH_LINK('google'),
-    body: {},
+    body: { redirectUri: 'https://example.com/api/auth/oauth/callback', state: 'nonce-1' },
     options: { requireAuth: true },
   });
 
@@ -862,7 +874,7 @@ test('getOAuthAuthorizationUrl validates provider and request payload', async ()
 
   const result = await getOAuthAuthorizationUrl(
     'google',
-    { intent: 'login', redirectUri: 'https://example.com/callback', appId: 'app-1' },
+    { intent: 'login', redirectUri: 'https://example.com/callback', state: 'nonce-123' },
     client
   );
 
@@ -870,17 +882,59 @@ test('getOAuthAuthorizationUrl validates provider and request payload', async ()
   assert.deepEqual(client.calls[0], {
     method: 'post',
     endpoint: ENDPOINTS.OAUTH_AUTHORIZE('google'),
-    body: {
-      intent: 'login',
-      redirectUri: 'https://example.com/callback',
-      appId: 'app-1',
-      userId: undefined,
-    },
-    options: {
-      headers: { 'X-App-ID': 'app-1' },
-      includeClientSecret: false,
-    },
+    body: { intent: 'login', redirectUri: 'https://example.com/callback', state: 'nonce-123' },
+    options: { includeClientSecret: false },
   });
+
+  await getOAuthAuthorizationUrl('github', { intent: 'authenticate', redirectUri: 'https://example.com/callback' }, client);
+  assert.deepEqual(client.calls[1].body, { intent: 'authenticate', redirectUri: 'https://example.com/callback' });
+});
+
+test('getOAuthAuthorizationUrl sends linking to linkOAuthProvider and bounds state', async () => {
+  const client = createFakeClient();
+
+  await assert.rejects(
+    () => getOAuthAuthorizationUrl('google', { intent: 'link', redirectUri: 'https://example.com/callback' }, client),
+    (error) => error instanceof ValidationError && error.field === 'intent' && /linkOAuthProvider/.test(error.message)
+  );
+  await assert.rejects(
+    () => getOAuthAuthorizationUrl('google', { intent: 'login', redirectUri: 'https://example.com/callback', state: 'x'.repeat(257) }, client),
+    (error) => error instanceof ValidationError && error.field === 'state'
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('linkOAuthProvider accepts a Phase-1 API reply (redirectUrl) as authUrl', async () => {
+  const client = createFakeClient();
+  client.setSession({ id: 'user-1' }, 'access-1', 'refresh-1');
+  client.post = async () => ({ redirectUrl: 'https://oauth.example.test/legacy' });
+
+  const linked = await linkOAuthProvider('github', { redirectUri: 'https://example.com/cb' }, client);
+  assert.equal(linked.authUrl, 'https://oauth.example.test/legacy');
+});
+
+test('exchangeOAuthCode returns the MFA challenge and sets no session for MFA users', async () => {
+  const client = createFakeClient();
+  Object.defineProperty(client, 'constructor', { value: { name: 'VoultClient' } });
+  client.post = async () => ({ mfaRequired: true, mfaPendingToken: 'pending-1', message: 'MFA verification required' });
+
+  const result = await exchangeOAuthCode('otc_mfa', { redirectUri: 'https://example.com/callback' }, client);
+
+  assert.deepEqual(result, { mfaRequired: true, mfaPendingToken: 'pending-1', message: 'MFA verification required' });
+  assert.equal(client.isAuthenticated(), false);
+});
+
+test('getApiMeta is public; getAppInfo sends the client secret', async () => {
+  const calls = [];
+  const client = { get: async (endpoint, options) => { calls.push({ endpoint, options }); return {}; } };
+
+  await getApiMeta(client);
+  await getAppInfo(client);
+
+  assert.deepEqual(calls, [
+    { endpoint: ENDPOINTS.META, options: { includeClientSecret: false } },
+    { endpoint: ENDPOINTS.APP_INFO, options: { includeClientSecret: true } },
+  ]);
 });
 
 test('exchangeOAuthCode posts the one-time code to Voult', async () => {

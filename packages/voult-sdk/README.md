@@ -233,18 +233,43 @@ const { options: loginOptions } = await auth.createPasskeyLoginOptions({ email: 
 await auth.verifyPasskeyLogin(credential);
 ```
 
-### OAuth Authorization URL
+### Hosted OAuth (Google, GitHub, …)
 
-For redirect-based OAuth flows:
+Provider credentials live in the Voult dashboard, not in your `.env`. Your server starts the
+flow, Voult talks to the provider, and your callback swaps a one-time code for a session.
+`redirectUri` must be on the app's **Callback URLs** list in the dashboard.
+
+> Using Express? `@voult/express` does all of this for you (`/oauth/:provider/start` and `/oauth/callback`).
 
 ```javascript
-const { authUrl } = await auth.getOAuthAuthorizationUrl('google', {
-  intent: 'login',                          
-  redirectUri: 'https://yourapp.com/callback',
-  appId: 'your-app-id',
-});
-window.location.href = authUrl;
+// 1. Start: remember a nonce, send it as `state`, redirect the browser
+const state = crypto.randomUUID();                 // store it in a signed, httpOnly cookie
+const { authUrl } = await getOAuthAuthorizationUrl('google', {
+  intent: 'authenticate',                          // or 'login' / 'register'
+  redirectUri: 'https://myapp.com/oauth/callback',
+  state,
+}, client);
+res.redirect(authUrl);
+
+// 2. Callback: Voult redirects to redirectUri?voult_code=…&state=…  (or ?error=…&state=…)
+if (req.query.state !== cookieState) throw new Error('Sign-in not started here');
+const result = await exchangeOAuthCode(req.query.voult_code, {
+  redirectUri: 'https://myapp.com/oauth/callback',
+}, client);                                        // needs the client secret: server-side only
+
+if (result.mfaRequired) {
+  // same as password sign-in: finish with verifyMfaLogin(result.mfaPendingToken, code, client)
+}
 ```
+
+Link a provider to the **signed-in** user (Voult returns to `redirectUri?linked=1&state=…`):
+
+```javascript
+const { authUrl } = await linkOAuthProvider('github', { redirectUri, state }, client);
+```
+
+Diagnostics: `getApiMeta(client)` (API version, `minSdkVersion`) and `getAppInfo(client)`
+(allowed callback URLs and which providers are enabled/configured — never secrets).
 
 ### CSRF Token (Browser Clients)
 
@@ -299,10 +324,11 @@ Passwords must meet the following requirements:
 - At least one number
 - At least one special character (@$!%*?&)
 
-You can validate passwords before sending to the API:
+You can validate passwords before sending to the API. In browser code, import from
+`@voult/sdk/validation`: it has no network code, so it doesn't pull the HTTP client into your bundle.
 
 ```javascript
-import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@voult/sdk';
+import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '@voult/sdk/validation';
 
 if (!isValidPassword(password)) {
   console.log(PASSWORD_REQUIREMENTS_MESSAGE);

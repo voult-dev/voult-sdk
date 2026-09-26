@@ -15,7 +15,8 @@ import {
 } from '@voult/sdk';
 import { catchAsync } from './catchAsync.js';
 import { requireAuth } from './requireAuth.js';
-import { toPublicAuthResult } from './tokens.js';
+import { cookieOptions, readCookie, toPublicAuthResult } from './tokens.js';
+import { COOKIE_MFA_PENDING } from './oauth.js';
 
 /**
  * @param {import('express').Request} req
@@ -35,7 +36,9 @@ export function registerAuthRoutes(router) {
     catchAsync(async (req, res) => {
       const client = req.voult;
       if (!client?.accessToken) {
-        res.json({ authenticated: false, user: null });
+        // An OAuth sign-in that stopped at MFA: the page should show the code prompt.
+        const mfaPending = Boolean(readCookie(req, COOKIE_MFA_PENDING));
+        res.json({ authenticated: false, user: null, ...(mfaPending && { mfaPending: true }) });
         return;
       }
 
@@ -170,8 +173,11 @@ export function registerAuthRoutes(router) {
   router.post(
     '/mfa/verify',
     catchAsync(async (req, res) => {
-      const { mfaPendingToken, mfaToken } = req.body ?? {};
+      const { mfaToken } = req.body ?? {};
+      // Password sign-in hands the token to the page; hosted OAuth keeps it in a cookie.
+      const mfaPendingToken = req.body?.mfaPendingToken ?? readCookie(req, COOKIE_MFA_PENDING);
       const result = await verifyMfaLogin(mfaPendingToken, mfaToken, req.voult);
+      res.clearCookie(COOKIE_MFA_PENDING, cookieOptions(req.voultConfig));
       sendAuthResult(req, res, result);
     })
   );

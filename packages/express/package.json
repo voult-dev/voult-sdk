@@ -1,6 +1,6 @@
 {
   "name": "@voult/express",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Mountable Express BFF for Voult authentication",
   "type": "module",
   "main": "./src/index.js",
@@ -32,7 +32,7 @@
   "license": "MIT",
   "peerDependencies": {
     "express": "^4.21.0 || ^5.0.0",
-    "@voult/sdk": ">=0.1.3"
+    "@voult/sdk": ">=0.2.0"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7"

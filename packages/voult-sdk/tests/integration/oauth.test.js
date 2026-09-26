@@ -99,13 +99,21 @@ test('OAuth linking endpoints require authentication and fall back to alternate 
     status: 400,
   });
 
-  const linked = await linkOAuthProvider('GOOGLE', client);
-  assert.deepEqual(linked, { redirectUrl: 'https://oauth.example.test/link/google' });
+  const redirectUri = 'https://app.example.test/api/auth/oauth/callback';
+  const linked = await linkOAuthProvider('GOOGLE', { redirectUri, state: 'nonce-1' }, client);
+  // This test server answers like a pre-Phase-2 API (`redirectUrl`); the SDK maps it to authUrl.
+  assert.deepEqual(linked, {
+    authUrl: 'https://oauth.example.test/link/google',
+    redirectUrl: 'https://oauth.example.test/link/google',
+    provider: 'google',
+    intent: 'link',
+    expiresInSeconds: undefined,
+  });
   assert.deepEqual(state.requests.at(-1), {
     method: 'POST',
     path: '/api/oauth/google/link',
     query: {},
-    body: {},
+    body: { redirectUri, state: 'nonce-1' },
     headers: state.requests.at(-1).headers,
   });
   assert.equal(state.requests.at(-1).headers.authorization, 'Bearer access-1');
@@ -114,7 +122,7 @@ test('OAuth linking endpoints require authentication and fall back to alternate 
   assert.deepEqual(providers, { providers: ['google', 'github'] });
   assert.equal(state.requests.at(-1).path, '/api/me/oauth-accounts');
 
-  await linkOAuthProvider('facebook', client);
+  await linkOAuthProvider('facebook', { redirectUri }, client);
   state.oauthAccountsPrimaryFails = true;
   const fallbackProviders = await getLinkedOAuthProviders(client);
   assert.deepEqual(fallbackProviders, { providers: ['facebook'] });
@@ -130,7 +138,7 @@ test('OAuth linking endpoints require authentication and fall back to alternate 
     headers: state.requests.at(-1).headers,
   });
 
-  await linkOAuthProvider('facebook', client);
+  await linkOAuthProvider('facebook', { redirectUri }, client);
   state.oauthUnlinkPrimaryFails = true;
   const fallbackUnlinked = await unlinkOAuthProvider('facebook', client);
   assert.deepEqual(fallbackUnlinked, { success: true });

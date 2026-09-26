@@ -50,6 +50,8 @@ export const ENDPOINTS = {
   // OAuth — unified authorization URL flow
   OAUTH_AUTHORIZE: (provider) => `/api/oauth/${provider}/authorize`,
   OAUTH_EXCHANGE: '/api/oauth/exchange',
+  META: '/api/meta',
+  APP_INFO: '/api/apps/me',
 
   // OAuth — provider token exchange (legacy/direct)
   GOOGLE_LOGIN: '/api/auth/google/login',
@@ -94,4 +96,8 @@ export const OAUTH_PROVIDERS = [
   'apple',
 ];
 
-export const OAUTH_INTENTS = ['register', 'login', 'link', 'authenticate'];
+// Sign-in intents for getOAuthAuthorizationUrl. Linking uses linkOAuthProvider (needs the user's session).
+export const OAUTH_INTENTS = ['register', 'login', 'authenticate'];
+
+// Max length of the opaque `state` Voult echoes back to the integrator.
+export const OAUTH_STATE_MAX_LENGTH = 256;

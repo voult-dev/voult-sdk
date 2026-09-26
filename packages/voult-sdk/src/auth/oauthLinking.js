@@ -3,7 +3,8 @@
  */
 
 import { ENDPOINTS } from '../constants.js';
-import { requireAuthenticated } from '../utils/helpers.js';
+import { requireAuthenticated, resolveClientArg } from '../utils/helpers.js';
+import { assertOAuthRedirect } from './oauth.js';
 import { validatePassword } from '../utils/validation.js';
 import { ValidationError } from '../errors.js';
 
@@ -31,22 +32,37 @@ function assertProvider(provider) {
 }
 
 /**
- * Start OAuth linking flow — returns URL to redirect the user to
+ * Start linking a provider to the signed-in user. Redirect the browser to `authUrl`;
+ * Voult returns it to `redirectUri` with `?linked=1&state=…` (or `?error=…`).
  * @param {string} provider
+ * @param {Object} options
+ * @param {string} options.redirectUri - Your callback URL; must be on the app's allowlist
+ * @param {string} [options.state] - Opaque value (≤256 chars) Voult sends back unchanged
  * @param {import('../client.js').VoultClient} client
  */
-export async function linkOAuthProvider(provider, client) {
+export async function linkOAuthProvider(provider, options = {}, client) {
+  const resolved = resolveClientArg(options, client);
+  client = resolved.client;
+  options = resolved.options;
+
   requireAuthenticated(client);
   const normalized = assertProvider(provider);
+  assertOAuthRedirect(options);
 
-  const response = await client.post(
-    ENDPOINTS.OAUTH_LINK(normalized),
-    {},
-    { requireAuth: true }
-  );
+  const body = { redirectUri: options.redirectUri };
+  if (options.state != null) body.state = options.state;
 
+  const response = await client.post(ENDPOINTS.OAUTH_LINK(normalized), body, { requireAuth: true });
+
+  // Voult < Phase 2 answered with `redirectUrl`.
+  const authUrl = response.authUrl ?? response.redirectUrl;
   return {
-    redirectUrl: response.redirectUrl,
+    authUrl,
+    /** @deprecated use authUrl */
+    redirectUrl: authUrl,
+    provider: response.provider ?? normalized,
+    intent: 'link',
+    expiresInSeconds: response.expiresInSeconds,
   };
 }
 

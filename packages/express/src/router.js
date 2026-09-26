@@ -3,6 +3,7 @@ import { resolveConfig } from './config.js';
 import { errorHandler } from './errors.js';
 import { createVoultMiddleware } from './middleware.js';
 import { registerAuthRoutes } from './routes.js';
+import { registerOAuthRoutes } from './oauth.js';
 
 /**
  * @typedef {import('express').Router} ExpressRouter
@@ -22,6 +23,7 @@ export function createVoultRouter(options = {}) {
   router.use(json());
   router.use(createVoultMiddleware({ config }));
   registerAuthRoutes(router);
+  registerOAuthRoutes(router);
   router.use(errorHandler);
 
   return router;

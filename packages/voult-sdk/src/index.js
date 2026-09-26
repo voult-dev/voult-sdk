@@ -4,10 +4,10 @@
  * @see https://github.com/voult-dev/voult
  */
 
-export const VERSION = '0.3.0';
+export const VERSION = '0.2.0';
 
 export { VoultClient } from './client.js';
-export { DEFAULT_BASE_URL, ENDPOINTS, OAUTH_PROVIDERS, OAUTH_INTENTS } from './constants.js';
+export { DEFAULT_BASE_URL, ENDPOINTS, OAUTH_PROVIDERS, OAUTH_INTENTS, OAUTH_STATE_MAX_LENGTH } from './constants.js';
 
 export {
   VoultError,
@@ -77,6 +77,9 @@ export {
   updatePasskey,
   deletePasskey,
 } from './auth/webauthn.js';
+
+// API / app discovery
+export { getApiMeta, getAppInfo } from './auth/meta.js';
 
 // OAuth
 export {
@@ -183,6 +186,7 @@ import {
   updatePasskey as _updatePasskey,
   deletePasskey as _deletePasskey,
 } from './auth/webauthn.js';
+import { getApiMeta as _getApiMeta, getAppInfo as _getAppInfo } from './auth/meta.js';
 import {
   getOAuthAuthorizationUrl as _getOAuthAuthorizationUrl,
   exchangeOAuthCode as _exchangeOAuthCode,
@@ -287,6 +291,10 @@ export default function voult(config) {
       _updatePasskey(credentialId, deviceName, client),
     deletePasskey: (credentialId) => _deletePasskey(credentialId, client),
 
+    // API / app discovery
+    getApiMeta: () => _getApiMeta(client),
+    getAppInfo: () => _getAppInfo(client),
+
     // OAuth
     getOAuthAuthorizationUrl: (provider, options) =>
       _getOAuthAuthorizationUrl(provider, options, client),
@@ -311,7 +319,7 @@ export default function voult(config) {
     authenticateWithApple: (credentials) => _appleAuth(credentials, client),
 
     // OAuth linking
-    linkOAuthProvider: (provider) => _linkOAuth(provider, client),
+    linkOAuthProvider: (provider, options) => _linkOAuth(provider, options, client),
     getLinkedOAuthProviders: () => _getLinkedOAuth(client),
     unlinkOAuthProvider: (provider) => _unlinkOAuth(provider, client),
     setPassword: (password) => _setPassword(password, client),

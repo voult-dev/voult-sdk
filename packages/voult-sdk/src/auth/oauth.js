@@ -2,7 +2,7 @@
  * OAuth sign-in and sign-up for supported providers
  */
 
-import { ENDPOINTS, OAUTH_INTENTS, OAUTH_PROVIDERS } from '../constants.js';
+import { ENDPOINTS, OAUTH_INTENTS, OAUTH_PROVIDERS, OAUTH_STATE_MAX_LENGTH } from '../constants.js';
 import { applyAuthResponse, assertOAuthCredential, resolveClientArg } from '../utils/helpers.js';
 import { ValidationError } from '../errors.js';
 import { isValidUrl } from '../utils/validation.js';
@@ -23,14 +23,27 @@ function assertOAuthProvider(provider) {
   return normalized;
 }
 
+/** Shared checks for the integrator's callback URL and opaque state. */
+export function assertOAuthRedirect({ redirectUri, state } = {}) {
+  if (!redirectUri) {
+    throw new ValidationError('redirectUri is required', 'redirectUri');
+  }
+  if (!isValidUrl(redirectUri)) {
+    throw new ValidationError('Invalid redirectUri format. Must be a valid URL.', 'redirectUri');
+  }
+  if (state != null && (typeof state !== 'string' || state.length > OAUTH_STATE_MAX_LENGTH)) {
+    throw new ValidationError(`state must be a string of at most ${OAUTH_STATE_MAX_LENGTH} characters`, 'state');
+  }
+}
+
 /**
  * Generate an OAuth authorization URL for redirect-based login/register/link flows.
  * @param {string} provider
  * @param {Object} options
- * @param {'register'|'login'|'link'|'authenticate'} options.intent
- * @param {string} options.redirectUri
- * @param {string} [options.appId] - App ID (defaults to X-App-ID header via clientId context)
- * @param {string} [options.userId] - Required when intent is `link`
+ * @param {'register'|'login'|'authenticate'} options.intent
+ * @param {string} options.redirectUri - Your callback URL; must be on the app's allowlist
+ * @param {string} [options.state] - Opaque value (≤256 chars) Voult sends back unchanged, e.g. a
+ *   nonce you stored in a cookie so your callback can reject sign-ins it didn't start
  * @param {import('../client.js').VoultClient} client
  */
 export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
@@ -40,6 +53,13 @@ export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
 
   const normalizedProvider = assertOAuthProvider(provider);
 
+  if (options.intent === 'link') {
+    throw new ValidationError(
+      'Linking needs the signed-in user: use linkOAuthProvider(provider, { redirectUri }, client)',
+      'intent'
+    );
+  }
+
   if (!options.intent || !OAUTH_INTENTS.includes(options.intent)) {
     throw new ValidationError(
       `intent must be one of: ${OAUTH_INTENTS.join(', ')}`,
@@ -47,32 +67,12 @@ export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
     );
   }
 
-  if (!options.redirectUri) {
-    throw new ValidationError('redirectUri is required', 'redirectUri');
-  }
+  assertOAuthRedirect(options);
 
-  if (!isValidUrl(options.redirectUri)) {
-    throw new ValidationError('Invalid redirectUri format. Must be a valid URL.', 'redirectUri');
-  }
-
-  if (options.intent === 'link' && !options.userId) {
-    throw new ValidationError('userId is required when intent is link', 'userId');
-  }
-
-  const body = {
-    intent: options.intent,
-    redirectUri: options.redirectUri,
-    appId: options.appId,
-    userId: options.userId,
-  };
-
-  const headers = {};
-  if (options.appId) {
-    headers['X-App-ID'] = options.appId;
-  }
+  const body = { intent: options.intent, redirectUri: options.redirectUri };
+  if (options.state != null) body.state = options.state;
 
   const response = await client.post(ENDPOINTS.OAUTH_AUTHORIZE(normalizedProvider), body, {
-    headers,
     includeClientSecret: false,
   });
 
@@ -81,12 +81,13 @@ export async function getOAuthAuthorizationUrl(provider, options = {}, client) {
     provider: response.provider ?? normalizedProvider,
     intent: response.intent ?? options.intent,
     expiresInSeconds: response.expiresInSeconds,
-    deprecation: response._deprecation,
   };
 }
 
 /**
  * Exchange a one-time Voult OAuth code (returned to the integrator callback) for tokens.
+ * For a user with MFA on, returns `{ mfaRequired: true, mfaPendingToken }` and sets no
+ * session — finish with verifyMfaLogin, exactly like password sign-in.
  * @param {string} code
  * @param {Object} options
  * @param {string} options.redirectUri
@@ -101,13 +102,7 @@ export async function exchangeOAuthCode(code, options = {}, client) {
     throw new ValidationError('OAuth exchange code is required', 'code');
   }
 
-  if (!options.redirectUri) {
-    throw new ValidationError('redirectUri is required', 'redirectUri');
-  }
-
-  if (!isValidUrl(options.redirectUri)) {
-    throw new ValidationError('Invalid redirectUri format. Must be a valid URL.', 'redirectUri');
-  }
+  assertOAuthRedirect({ redirectUri: options.redirectUri });
 
   const response = await client.post(
     ENDPOINTS.OAUTH_EXCHANGE,

@@ -14,7 +14,7 @@ const REFRESH_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
  * @param {VoultExpressConfig} config
  * @param {{ maxAge?: number }} [overrides]
  */
-function cookieOptions(config, overrides = {}) {
+export function cookieOptions(config, overrides = {}) {
   return {
     httpOnly: true,
     signed: Boolean(config.sessionSecret),
@@ -30,7 +30,7 @@ function cookieOptions(config, overrides = {}) {
  * @param {string} name
  * @returns {unknown}
  */
-function readCookie(req, name) {
+export function readCookie(req, name) {
   return req.signedCookies?.[name] ?? req.cookies?.[name];
 }
 

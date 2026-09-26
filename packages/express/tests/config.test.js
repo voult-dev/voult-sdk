@@ -24,8 +24,28 @@ describe('loadConfigFromEnv', () => {
       clientSecret: 'client-secret',
       sessionSecret: 'session-secret',
       appUrl: 'https://app.example.com',
+      oauthCallbackUrl: undefined,
+      oauth: { successPath: '/', mfaPath: '/mfa', errorPath: '/login' },
       session: { strategy: 'cookie' },
     });
+  });
+
+  it('reads VOULT_OAUTH_CALLBACK_URL and rejects a non-URL', () => {
+    const env = { VOULT_CLIENT_ID: 'id', VOULT_CLIENT_SECRET: 'secret' };
+    expect(loadConfigFromEnv({ env: { ...env, VOULT_OAUTH_CALLBACK_URL: 'https://api.myapp.com/api/auth/oauth/callback' } }).oauthCallbackUrl)
+      .toBe('https://api.myapp.com/api/auth/oauth/callback');
+    expect(() => loadConfigFromEnv({ env: { ...env, VOULT_OAUTH_CALLBACK_URL: 'not a url' } }))
+      .toThrow(/Invalid VOULT_OAUTH_CALLBACK_URL/);
+  });
+
+  it('accepts oauth paths and rejects ones that could leave the site', () => {
+    const env = { VOULT_CLIENT_ID: 'id', VOULT_CLIENT_SECRET: 'secret' };
+    expect(loadConfigFromEnv({ env, overrides: { oauth: { successPath: '/account' } } }).oauth)
+      .toEqual({ successPath: '/account', mfaPath: '/mfa', errorPath: '/login' });
+    expect(() => loadConfigFromEnv({ env, overrides: { oauth: { errorPath: '//evil.example' } } }))
+      .toThrow(/oauth.errorPath/);
+    expect(() => loadConfigFromEnv({ env, overrides: { oauth: { mfaPath: 'https://evil.example' } } }))
+      .toThrow(/oauth.mfaPath/);
   });
 
   it('defaults base URL when VOULT_BASE_URL is omitted', () => {

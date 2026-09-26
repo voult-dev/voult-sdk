@@ -13,6 +13,7 @@ const ENV_FIELDS = {
   sessionSecret: { canonical: 'VOULT_SESSION_SECRET', aliases: ['SESSION_SECRET'] },
   appUrl: { canonical: 'VOULT_APP_URL', aliases: ['APP_URL'] },
   sessionStrategy: { canonical: 'VOULT_SESSION_STRATEGY', aliases: [] },
+  oauthCallbackUrl: { canonical: 'VOULT_OAUTH_CALLBACK_URL', aliases: [] },
 };
 
 const warnedLegacyAliases = new Set();
@@ -102,6 +103,22 @@ function requireHttpUrl(value, envName) {
   return raw;
 }
 
+const OAUTH_PATH_DEFAULTS = { successPath: '/', mfaPath: '/mfa', errorPath: '/login' };
+
+/**
+ * Where the hosted-OAuth callback sends the browser, relative to VOULT_APP_URL.
+ * @param {Partial<Record<keyof typeof OAUTH_PATH_DEFAULTS, string>> | undefined} oauth
+ */
+function normalizeOAuthPaths(oauth = {}) {
+  return Object.fromEntries(Object.entries(OAUTH_PATH_DEFAULTS).map(([key, fallback]) => {
+    const value = trimToUndefined(oauth[key]) ?? fallback;
+    if (!value.startsWith('/') || value.startsWith('//')) {
+      throw new Error(`[voult] oauth.${key} must be a path starting with "/" (got "${value}").`);
+    }
+    return [key, value];
+  }));
+}
+
 /**
  * @param {VoultExpressConfig} config
  * @param {NodeJS.Dict<string | undefined>} env
@@ -135,6 +152,9 @@ function normalizeConfig(config, env) {
   const appUrl = trimToUndefined(config.appUrl)
     ? requireHttpUrl(config.appUrl, 'VOULT_APP_URL')
     : undefined;
+  const oauthCallbackUrl = trimToUndefined(config.oauthCallbackUrl)
+    ? requireHttpUrl(config.oauthCallbackUrl, 'VOULT_OAUTH_CALLBACK_URL')
+    : undefined;
 
   if (strategy === 'cookie' && !sessionSecret && resolveNodeEnv(env) === 'production') {
     throw new Error(
@@ -148,6 +168,8 @@ function normalizeConfig(config, env) {
     clientSecret,
     sessionSecret,
     appUrl,
+    oauthCallbackUrl,
+    oauth: normalizeOAuthPaths(config.oauth),
     session: { strategy },
   };
 }
@@ -170,6 +192,8 @@ export function loadConfigFromEnv(options = {}) {
       clientSecret: overrides.clientSecret ?? readEnvValue(env, ENV_FIELDS.clientSecret),
       sessionSecret: overrides.sessionSecret ?? readEnvValue(env, ENV_FIELDS.sessionSecret),
       appUrl: overrides.appUrl ?? readEnvValue(env, ENV_FIELDS.appUrl),
+      oauthCallbackUrl: overrides.oauthCallbackUrl ?? readEnvValue(env, ENV_FIELDS.oauthCallbackUrl),
+      oauth: overrides.oauth,
       session: {
         strategy: overrides.session?.strategy ?? readEnvValue(env, ENV_FIELDS.sessionStrategy),
       },
@@ -186,12 +210,13 @@ export function loadConfigFromEnv(options = {}) {
 export function resolveConfig(options = {}) {
   const env = options.env ?? process.env;
 
+  // `oauth` paths may also be passed at the top level: createVoultRouter({ oauth: { ... } }).
   if (options.config) {
-    return normalizeConfig(options.config, env);
+    return normalizeConfig({ ...options.config, oauth: options.oauth ?? options.config.oauth }, env);
   }
 
   return loadConfigFromEnv({
     env,
-    overrides: options.overrides,
+    overrides: options.oauth ? { ...options.overrides, oauth: options.oauth } : options.overrides,
   });
 }

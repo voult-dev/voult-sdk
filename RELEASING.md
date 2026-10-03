@@ -10,11 +10,11 @@ Every package in this repo is published by CI, from a git tag, with [npm provena
 4. **Tag and push** from that commit:
 
    ```bash
-   git tag @voult/express@0.3.0        # or create-voult-app@0.1.0
+   git tag @voult/express@0.3.0
    git push origin @voult/express@0.3.0
    ```
 
-   One tag = one package. To release two packages, push two tags. Release dependencies first (e.g. `@voult/sdk` before `@voult/express`).
+   For `create-voult-app`, tag `create-voult-app@<version>`. One tag = one package. To release two packages, push two tags. Release dependencies first (e.g. `@voult/sdk` before `@voult/express`).
 
 5. Watch the **release** workflow in GitHub Actions. When it finishes, the npm page shows the version with a "Provenance" badge linking back to the commit and workflow run.
 
@@ -49,9 +49,9 @@ Done once per account/package. Keep this list in sync with reality.
 ### npm organisation (`@voult`)
 
 - [ ] The `@voult` scope belongs to the npm **org** `voult` (check: `npm org ls voult`). If it's a personal scope, convert it at npmjs.com → your avatar → *Organizations*.
-- [ ] At least **two owners** in the org (`npm org set voult <user> owner`). With one owner, losing that account means losing the packages.
-- [ ] Every owner has 2FA on (npmjs.com → *Account* → *Two-Factor Authentication*), and the org requires it (*Organization* → *Settings* → *Require 2FA*).
-- [ ] `create-voult-app` (unscoped) is owned by the org: after its first publish, `npm owner add <second-owner> create-voult-app`. Unscoped names don't belong to the org automatically, so each owner is added by hand.
+- [ ] 2FA on for the owner (npmjs.com → *Account* → *Two-Factor Authentication*), and the org requires it (*Organization* → *Settings* → *Require 2FA*).
+- [ ] **Single owner (`devolabode`), so account recovery is the safeguard:** 2FA recovery codes saved in a password manager, a second 2FA method (security key or a second authenticator device), and the account email on a domain/mailbox you won't lose. Losing the account means losing every package.
+- [ ] When a second maintainer joins: `npm org set voult <user> owner`, and `npm owner add <user> <pkg>` for the unscoped `create-voult-app` (unscoped names don't belong to the org, so owners are added by hand).
 
 ### Per package: trusted publisher
 
@@ -80,13 +80,12 @@ for name in @voult/core @voult/next create-voult-app; do
   dir=$(mktemp -d) && cd "$dir"
   printf '{ "name": "%s", "version": "0.0.0", "description": "Placeholder: not released yet", "license": "MIT", "repository": { "type": "git", "url": "git+https://github.com/voult-dev/voult-sdk.git" } }\n' "$name" > package.json
   echo "Not released yet. See https://github.com/voult-dev/voult-sdk" > README.md
-  npm publish --access public              # asks for your 2FA code
-  npm deprecate "$name@0.0.0" "not released yet"
+  npm publish --access public && npm deprecate "$name@0.0.0" "not released yet"
   cd - > /dev/null
 done
 ```
 
-Then configure the trusted publisher for each (above). Every version after `0.0.0` comes from the workflow.
+`npm publish` asks for your 2FA code. Then configure the trusted publisher for each (above). Every version after `0.0.0` comes from the workflow.
 
 ## Manual fallback (last resort)
 
@@ -94,12 +93,12 @@ Use this only when CI can't publish (GitHub Actions or npm OIDC down) **and** th
 
 ```bash
 cd packages/<pkg>
-node ../../scripts/check-release.mjs @voult/<pkg>@<version>   # same gate as CI
+node ../../scripts/check-release.mjs @voult/<pkg>@<version>
 npm test
-npm publish --access public --tag latest                       # 2FA code required; use --tag next for prereleases
+npm publish --access public --tag latest
 git tag @voult/<pkg>@<version> && git push origin @voult/<pkg>@<version>
 ```
 
-Pushing the tag will start the workflow, which fails at `npm publish` because the version exists. That's expected: cancel the run.
+`npm publish` asks for your 2FA code (use `--tag next` for a prerelease). Pushing the tag starts the workflow, which fails at `npm publish` because the version exists. That's expected: cancel the run.
 
 Then add a line to that version's CHANGELOG entry: `Published manually (no provenance): <reason>.` The target is **zero** manual publishes.

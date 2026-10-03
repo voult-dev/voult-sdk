@@ -1,0 +1,35 @@
+name: release
+# Publishes one package per tag: @voult/<pkg>@<version> or create-voult-app@<version>.
+# Auth is npm trusted publishing (OIDC): no NPM_TOKEN secret exists. See RELEASING.md.
+on:
+  push:
+    tags:
+      - '@voult/*@*'
+      - 'create-voult-app@*'
+
+permissions:
+  contents: read
+  id-token: write # OIDC for npm trusted publishing + provenance
+
+concurrency:
+  group: release-${{ github.ref_name }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1.
+      - run: npm install -g npm@^11.5.1
+      - run: npm ci
+      - id: check
+        run: node scripts/check-release.mjs "$GITHUB_REF_NAME"
+      - run: npm test --if-present
+        working-directory: ${{ steps.check.outputs.dir }}
+      - run: npm publish --provenance --access public --tag ${{ steps.check.outputs.dist_tag }}
+        working-directory: ${{ steps.check.outputs.dir }}

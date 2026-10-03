@@ -1,9 +1,7 @@
-import { Router, json } from 'express';
-import { resolveConfig } from './config.js';
-import { errorHandler } from './errors.js';
+import { Router } from 'express';
+import { createVoultHandler, normalizeVoultError, resolveConfig } from '@voult/core';
+import { toRequest, writeResponse } from './fetch.js';
 import { createVoultMiddleware } from './middleware.js';
-import { registerAuthRoutes } from './routes.js';
-import { registerOAuthRoutes } from './oauth.js';
 
 /**
  * @typedef {import('express').Router} ExpressRouter
@@ -11,20 +9,36 @@ import { registerOAuthRoutes } from './oauth.js';
  */
 
 /**
- * Create an Express router for Voult auth routes.
+ * Create an Express router for Voult auth routes. The routes live in @voult/core; this
+ * translates Express requests to Fetch API `Request`s and back. No `express.json()` needed.
  *
  * @param {CreateVoultRouterOptions} [options]
  * @returns {ExpressRouter}
  */
 export function createVoultRouter(options = {}) {
   const config = resolveConfig(options);
+  const handle = createVoultHandler(config);
+  // Paths the router doesn't serve fall through with req.voult set, as before 0.3.
+  const voultMiddleware = createVoultMiddleware({ config });
   const router = Router();
 
-  router.use(json());
-  router.use(createVoultMiddleware({ config }));
-  registerAuthRoutes(router);
-  registerOAuthRoutes(router);
-  router.use(errorHandler);
+  router.use(async (req, res, next) => {
+    try {
+      const response = await handle(await toRequest(req), { basePath: req.baseUrl, notFound: () => null });
+      if (!response) {
+        voultMiddleware(req, res, next);
+        return;
+      }
+      await writeResponse(res, response);
+    } catch (err) {
+      if (res.headersSent) {
+        next(err);
+        return;
+      }
+      const payload = normalizeVoultError(err);
+      res.status(payload.error.status).json(payload);
+    }
+  });
 
   return router;
 }

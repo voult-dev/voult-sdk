@@ -1,0 +1,53 @@
+{
+  "name": "@voult/core",
+  "version": "0.1.0",
+  "description": "The Voult auth router on the Fetch API (Request → Response), shared by @voult/express and @voult/next",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "src",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "voult",
+    "authentication",
+    "fetch",
+    "edge"
+  ],
+  "author": "Samuel Olabode",
+  "license": "MIT",
+  "peerDependencies": {
+    "@voult/sdk": ">=0.2.0"
+  },
+  "devDependencies": {
+    "@voult/sdk": "*",
+    "cookie-signature": "^1.0.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voult-dev/voult-sdk.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/voult-dev/voult-sdk/issues"
+  },
+  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/core#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

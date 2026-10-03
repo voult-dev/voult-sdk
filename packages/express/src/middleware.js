@@ -1,11 +1,10 @@
 import cookieParser from 'cookie-parser';
-import { VoultClient } from '@voult/sdk';
-import { resolveConfig } from './config.js';
-import { applyIncomingSession, attachSessionPersistence } from './tokens.js';
+import { createVoultClient, resolveConfig, restoreSession, sessionCookies } from '@voult/core';
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
  * @typedef {import('./index.js').CreateVoultRouterOptions} CreateVoultRouterOptions
+ * @typedef {import('@voult/core').CookieToSet} CookieToSet
  */
 
 /**
@@ -15,8 +14,44 @@ function passthrough(_req, _res, next) {
   next();
 }
 
+/** @param {import('express').Request} req */
+export const readCookie = (req) => (name) => req.signedCookies?.[name] ?? req.cookies?.[name];
+
 /**
- * Per-request Voult client: new instance, restore session, persist before headers.
+ * Write core's cookie descriptions with `res.cookie()` (cookie-parser's secret signs them).
+ * @param {import('express').Response} res
+ * @param {CookieToSet[]} cookies
+ */
+export function applyCookies(res, cookies) {
+  for (const { name, value, options } of cookies) res.cookie(name, value, options);
+}
+
+/**
+ * Persist the session when the handler writes the response, not on `finish`.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+function attachSessionPersistence(req, res) {
+  let flushed = false;
+
+  const persist = () => {
+    if (flushed || res.headersSent) return;
+    flushed = true;
+    applyCookies(res, sessionCookies(req.voult, req.voultIncomingSession, req.voultConfig));
+  };
+
+  for (const method of ['json', 'send', 'redirect']) {
+    const original = res[method].bind(res);
+    res[method] = (...args) => {
+      persist();
+      return original(...args);
+    };
+  }
+}
+
+/**
+ * Per-request Voult client for your own routes: new instance, session restored from the
+ * cookies (or bearer header), new tokens persisted before the response goes out.
  *
  * @param {CreateVoultRouterOptions} [options]
  * @returns {RequestHandler}
@@ -37,14 +72,13 @@ export function createVoultMiddleware(options = {}) {
       }
 
       req.voultConfig = config;
-      req.voult = new VoultClient({
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
-        baseURL: config.baseURL,
-      });
-
-      applyIncomingSession(req, req.voult, config);
-      attachSessionPersistence(req, res, config);
+      req.voult = createVoultClient(config);
+      req.voultIncomingSession = restoreSession(req.voult, {
+        read: readCookie(req),
+        authorization: req.headers.authorization,
+        refreshToken: req.body?.refreshToken || req.headers['x-refresh-token'],
+      }, config);
+      attachSessionPersistence(req, res);
       next();
     });
   }

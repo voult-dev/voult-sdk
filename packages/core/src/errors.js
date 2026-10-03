@@ -27,16 +27,3 @@ export function normalizeVoultError(err) {
     },
   };
 }
-
-/**
- * @type {import('express').ErrorRequestHandler}
- */
-export function errorHandler(err, _req, res, next) {
-  if (res.headersSent) {
-    next(err);
-    return;
-  }
-
-  const payload = normalizeVoultError(err);
-  res.status(payload.error.status).json(payload);
-}

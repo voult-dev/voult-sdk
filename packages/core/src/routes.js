@@ -1,4 +1,5 @@
 import {
+  AuthenticationError,
   getCurrentUser,
   getMfaStatus,
   refreshSession,
@@ -13,193 +14,121 @@ import {
   verifyEmail,
   verifyMfaLogin,
 } from '@voult/sdk';
-import { catchAsync } from './catchAsync.js';
-import { requireAuth } from './requireAuth.js';
-import {
-  cookieOptions,
-  readCookie,
-  renewSessionFromRefreshCookie,
-  toPublicAuthResult,
-} from './tokens.js';
-import { COOKIE_MFA_PENDING, MFA_PENDING_MAX_AGE_MS } from './oauth.js';
+import { normalizeVoultError } from './errors.js';
+import { COOKIE_MFA_PENDING, MFA_PENDING_MAX_AGE_MS, clearCookie, setCookie, toPublicAuthResult } from './session.js';
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {object} result
+ * @typedef {import('./handler.js').Context} Context
+ * @typedef {import('./handler.js').Route} Route
  */
-function sendAuthResult(req, res, result) {
+
+/** @param {unknown} body @param {number} [status] */
+export const json = (body, status = 200) => ({ status, body });
+/** @param {string} location */
+export const redirect = (location) => ({ status: 302, location });
+
+/**
+ * Only signed-in users get through: renews an expired access cookie from the refresh cookie
+ * first, then answers 401 JSON.
+ * @param {(ctx: Context) => Promise<unknown>} handler
+ */
+export function authenticated(handler) {
+  return async (ctx) => {
+    await ctx.renew();
+    if (!ctx.client.accessToken) {
+      const payload = normalizeVoultError(new AuthenticationError('Authentication required'));
+      return json(payload, payload.error.status);
+    }
+    return handler(ctx);
+  };
+}
+
+/** @param {Context} ctx @param {object} result */
+function authResult(ctx, result) {
   // Park the MFA pending token server-side too (as hosted OAuth does), so /mfa/verify needs only
   // the code and a page reload doesn't lose the sign-in. The JSON still carries it for older clients.
-  if (result?.mfaRequired && result.mfaPendingToken && req.voultConfig?.session?.strategy === 'cookie') {
-    res.cookie(COOKIE_MFA_PENDING, result.mfaPendingToken, cookieOptions(req.voultConfig, { maxAge: MFA_PENDING_MAX_AGE_MS }));
+  if (result?.mfaRequired && result.mfaPendingToken && ctx.config.session.strategy === 'cookie') {
+    ctx.cookies.push(setCookie(ctx.config, COOKIE_MFA_PENDING, result.mfaPendingToken, { maxAge: MFA_PENDING_MAX_AGE_MS }));
   }
-  res.json(toPublicAuthResult(req, result));
+  return json(toPublicAuthResult(result, ctx.config));
 }
 
-/**
- * @param {import('express').Router} router
- */
-export function registerAuthRoutes(router) {
-  router.get(
-    '/session',
-    catchAsync(async (req, res) => {
-      const client = req.voult;
-      await renewSessionFromRefreshCookie(req, res);
+/** @type {Route[]} */
+export const authRoutes = [
+  ['GET', '/session', async (ctx) => {
+    await ctx.renew();
 
-      if (!client?.accessToken) {
-        // A sign-in that stopped at MFA: the page should show the code prompt.
-        const mfaPending = Boolean(readCookie(req, COOKIE_MFA_PENDING));
-        res.json({ authenticated: false, user: null, ...(mfaPending && { mfaPending: true }) });
-        return;
-      }
+    if (!ctx.client.accessToken) {
+      // A sign-in that stopped at MFA: the page should show the code prompt.
+      const mfaPending = Boolean(ctx.read(COOKIE_MFA_PENDING));
+      return json({ authenticated: false, user: null, ...(mfaPending && { mfaPending: true }) });
+    }
 
-      const localUser = client.getCurrentUser();
-      if (localUser?.id || localUser?.email) {
-        res.json({ authenticated: true, user: localUser });
-        return;
-      }
+    const localUser = ctx.client.getCurrentUser();
+    if (localUser?.id || localUser?.email) {
+      return json({ authenticated: true, user: localUser });
+    }
 
-      try {
-        const user = await getCurrentUser(client);
-        res.json({ authenticated: true, user });
-      } catch {
-        res.json({ authenticated: false, user: null });
-      }
-    })
-  );
+    try {
+      return json({ authenticated: true, user: await getCurrentUser(ctx.client) });
+    } catch {
+      return json({ authenticated: false, user: null });
+    }
+  }],
 
-  router.post(
-    '/register',
-    catchAsync(async (req, res) => {
-      const { email, password, fullName, username } = req.body ?? {};
-      const result = await signUpWithEmailAndPassword(
-        email,
-        password,
-        { fullName, username },
-        req.voult
-      );
-      sendAuthResult(req, res, result);
-    })
-  );
+  ['POST', '/register', async (ctx) => {
+    const { email, password, fullName, username } = ctx.body;
+    return authResult(ctx, await signUpWithEmailAndPassword(email, password, { fullName, username }, ctx.client));
+  }],
 
-  router.post(
-    '/username-register',
-    catchAsync(async (req, res) => {
-      const { username, password, fullName, email } = req.body ?? {};
-      const result = await signUpWithUsernameAndPassword(
-        username,
-        password,
-        { fullName, email },
-        req.voult
-      );
-      sendAuthResult(req, res, result);
-    })
-  );
+  ['POST', '/username-register', async (ctx) => {
+    const { username, password, fullName, email } = ctx.body;
+    return authResult(ctx, await signUpWithUsernameAndPassword(username, password, { fullName, email }, ctx.client));
+  }],
 
-  router.post(
-    '/email-login',
-    catchAsync(async (req, res) => {
-      const { email, password } = req.body ?? {};
-      const result = await signInWithEmailAndPassword(email, password, req.voult);
-      sendAuthResult(req, res, result);
-    })
-  );
+  ['POST', '/email-login', async (ctx) => {
+    const { email, password } = ctx.body;
+    return authResult(ctx, await signInWithEmailAndPassword(email, password, ctx.client));
+  }],
 
-  router.post(
-    '/username-login',
-    catchAsync(async (req, res) => {
-      const { username, password } = req.body ?? {};
-      const result = await signInWithUsernameAndPassword(username, password, req.voult);
-      sendAuthResult(req, res, result);
-    })
-  );
+  ['POST', '/username-login', async (ctx) => {
+    const { username, password } = ctx.body;
+    return authResult(ctx, await signInWithUsernameAndPassword(username, password, ctx.client));
+  }],
 
-  router.post(
-    '/logout',
-    catchAsync(async (req, res) => {
-      const result = await signOut(req.voult);
-      res.json(result);
-    })
-  );
+  ['POST', '/logout', async (ctx) => json(await signOut(ctx.client))],
 
-  router.post(
-    '/sessions/refresh',
-    catchAsync(async (req, res) => {
-      if (req.body?.refreshToken) {
-        req.voult.refreshToken = req.body.refreshToken;
-      }
+  ['POST', '/sessions/refresh', async (ctx) => {
+    if (ctx.body.refreshToken) {
+      ctx.client.refreshToken = ctx.body.refreshToken;
+    }
+    return authResult(ctx, await refreshSession(ctx.client));
+  }],
 
-      const result = await refreshSession(req.voult);
-      sendAuthResult(req, res, result);
-    })
-  );
+  ['GET', '/user/me', authenticated(async (ctx) => json({ user: await getCurrentUser(ctx.client) }))],
 
-  router.get(
-    '/user/me',
-    requireAuth,
-    catchAsync(async (req, res) => {
-      const user = await getCurrentUser(req.voult);
-      res.json({ user });
-    })
-  );
+  ['PATCH', '/user/me', authenticated(async (ctx) => json(await updateProfile(ctx.body, ctx.client)))],
 
-  router.patch(
-    '/user/me',
-    requireAuth,
-    catchAsync(async (req, res) => {
-      const result = await updateProfile(req.body ?? {}, req.voult);
-      res.json(result);
-    })
-  );
+  ['POST', '/user/forgot-password', async (ctx) => json(await sendPasswordResetEmail(ctx.body.email, ctx.client))],
 
-  router.post(
-    '/user/forgot-password',
-    catchAsync(async (req, res) => {
-      const result = await sendPasswordResetEmail(req.body?.email, req.voult);
-      res.json(result);
-    })
-  );
+  ['POST', '/user/reset-password', async (ctx) => {
+    const { token, appId } = ctx.body;
+    const newPassword = ctx.body.newPassword ?? ctx.body.password;
+    return json(await resetPassword(token, newPassword, { appId }, ctx.client));
+  }],
 
-  router.post(
-    '/user/reset-password',
-    catchAsync(async (req, res) => {
-      const token = req.body?.token;
-      const newPassword = req.body?.newPassword ?? req.body?.password;
-      const appId = req.body?.appId;
-      const result = await resetPassword(token, newPassword, { appId }, req.voult);
-      res.json(result);
-    })
-  );
+  ['GET', '/user/verify-email', async (ctx) => (
+    json(await verifyEmail(ctx.query('token'), { appId: ctx.query('appId') }, ctx.client))
+  )],
 
-  router.get(
-    '/user/verify-email',
-    catchAsync(async (req, res) => {
-      const token = req.query?.token;
-      const appId = req.query?.appId;
-      const result = await verifyEmail(token, { appId }, req.voult);
-      res.json(result);
-    })
-  );
+  ['POST', '/mfa/verify', async (ctx) => {
+    const { mfaToken } = ctx.body;
+    // Password sign-in hands the token to the page; hosted OAuth keeps it in a cookie.
+    const mfaPendingToken = ctx.body.mfaPendingToken ?? ctx.read(COOKIE_MFA_PENDING);
+    const result = await verifyMfaLogin(mfaPendingToken, mfaToken, ctx.client);
+    ctx.cookies.push(clearCookie(ctx.config, COOKIE_MFA_PENDING));
+    return authResult(ctx, result);
+  }],
 
-  router.post(
-    '/mfa/verify',
-    catchAsync(async (req, res) => {
-      const { mfaToken } = req.body ?? {};
-      // Password sign-in hands the token to the page; hosted OAuth keeps it in a cookie.
-      const mfaPendingToken = req.body?.mfaPendingToken ?? readCookie(req, COOKIE_MFA_PENDING);
-      const result = await verifyMfaLogin(mfaPendingToken, mfaToken, req.voult);
-      res.clearCookie(COOKIE_MFA_PENDING, cookieOptions(req.voultConfig));
-      sendAuthResult(req, res, result);
-    })
-  );
-
-  router.get(
-    '/mfa/status',
-    requireAuth,
-    catchAsync(async (req, res) => {
-      const result = await getMfaStatus(req.voult);
-      res.json(result);
-    })
-  );
-}
+  ['GET', '/mfa/status', authenticated(async (ctx) => json(await getMfaStatus(ctx.client)))],
+];

@@ -1,10 +1,13 @@
 import { DEFAULT_BASE_URL } from '@voult/sdk';
 
 /**
- * @typedef {import('./index.js').VoultExpressConfig} VoultExpressConfig
+ * @typedef {import('./index.js').VoultConfig} VoultExpressConfig
  * @typedef {import('./index.js').LoadConfigFromEnvOptions} LoadConfigFromEnvOptions
- * @typedef {import('./index.js').CreateVoultRouterOptions} CreateVoultRouterOptions
+ * @typedef {import('./index.js').ResolveConfigOptions} CreateVoultRouterOptions
  */
+
+// No `process` on the Edge: read it through globalThis.
+const processEnv = () => globalThis.process?.env ?? {};
 
 const ENV_FIELDS = {
   baseURL: { canonical: 'VOULT_BASE_URL', aliases: ['BASE_URL'] },
@@ -72,7 +75,7 @@ const dashboardUrl = (baseURL) => new URL('/dashboard', baseURL).href;
 function resolveNodeEnv(env) {
   return (
     trimToUndefined(env.NODE_ENV) ??
-    trimToUndefined(process.env.NODE_ENV) ??
+    trimToUndefined(processEnv().NODE_ENV) ??
     'development'
   );
 }
@@ -183,7 +186,7 @@ function normalizeConfig(config, env) {
  * @returns {VoultExpressConfig}
  */
 export function loadConfigFromEnv(options = {}) {
-  const env = options.env ?? process.env;
+  const env = options.env ?? processEnv();
   const overrides = options.overrides ?? {};
 
   return normalizeConfig(
@@ -209,7 +212,7 @@ export function loadConfigFromEnv(options = {}) {
  * @returns {VoultExpressConfig}
  */
 export function resolveConfig(options = {}) {
-  const env = options.env ?? process.env;
+  const env = options.env ?? processEnv();
 
   // `oauth` paths may also be passed at the top level: createVoultRouter({ oauth: { ... } }).
   if (options.config) {

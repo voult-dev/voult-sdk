@@ -1,6 +1,6 @@
 import { AuthenticationError } from '@voult/sdk';
-import { normalizeVoultError } from './errors.js';
-import { renewSessionFromRefreshCookie } from './tokens.js';
+import { normalizeVoultError, renewSession } from '@voult/core';
+import { applyCookies, readCookie } from './middleware.js';
 
 /**
  * Only let signed-in users through. Use it on your own routes too:
@@ -9,7 +9,7 @@ import { renewSessionFromRefreshCookie } from './tokens.js';
  *   app.get('/api/orders', requireAuth, (req, res) => { ... req.voult ... });
  *
  * Renews an expired access cookie from the refresh cookie first, and answers
- * 401 JSON (`{ error: { code, message, status } }`) itself, inside or outside the router.
+ * 401 JSON (`{ error: { code, message, status } }`) itself.
  * @type {import('express').RequestHandler}
  */
 export async function requireAuth(req, res, next) {
@@ -19,7 +19,7 @@ export async function requireAuth(req, res, next) {
   }
 
   try {
-    await renewSessionFromRefreshCookie(req, res);
+    applyCookies(res, await renewSession(req.voult, readCookie(req), req.voultConfig));
   } catch (err) {
     next(err);
     return;

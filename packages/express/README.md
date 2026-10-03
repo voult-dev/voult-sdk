@@ -42,9 +42,11 @@ Legacy aliases (`CLIENT_ID`, `CLIENT_SECRET`, `BASE_URL`, `SESSION_SECRET`, `APP
 ```ts
 export { createVoultRouter } from './router.js';
 export { createVoultMiddleware } from './middleware.js';
-export { loadConfigFromEnv } from './config.js';
+export { loadConfigFromEnv } from '@voult/core';
 export { requireAuth } from './requireAuth.js';
 ```
+
+The routes themselves live in [`@voult/core`](../core) (the same router `@voult/next` uses); this package translates Express requests to Fetch API `Request`s and back. The router reads JSON bodies itself (100 kB limit), so `express.json()` is optional.
 
 ### Protect your own routes
 

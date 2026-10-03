@@ -1,23 +1,31 @@
-import crypto from 'node:crypto';
 import {
   exchangeOAuthCode,
   getAppInfo,
   getOAuthAuthorizationUrl,
   linkOAuthProvider,
 } from '@voult/sdk';
-import { catchAsync } from './catchAsync.js';
-import { cookieOptions, readCookie } from './tokens.js';
+import { base64 } from './cookies.js';
+import { json, redirect } from './routes.js';
+import {
+  COOKIE_MFA_PENDING,
+  COOKIE_OAUTH,
+  MFA_PENDING_MAX_AGE_MS,
+  OAUTH_COOKIE_MAX_AGE_MS,
+  clearCookie,
+  setCookie,
+} from './session.js';
 
 // Hosted OAuth: provider credentials live in the Voult dashboard, never in this server's env.
 //   GET /oauth/providers          → which providers the app can use
 //   GET /oauth/:provider/start    → 302 to the provider (via Voult)
 //   GET /oauth/callback           → Voult sends the browser back here; we set the session
 
-export const COOKIE_OAUTH = 'voult_oauth';
-export const COOKIE_MFA_PENDING = 'voult_mfa_pending';
+/**
+ * @typedef {import('./handler.js').Context} Context
+ * @typedef {import('./handler.js').Route} Route
+ * @typedef {import('./index.js').VoultConfig} VoultConfig
+ */
 
-const OAUTH_COOKIE_MAX_AGE_MS = 10 * 60 * 1000; // matches Voult's signed state lifetime
-export const MFA_PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const PROVIDERS_CACHE_MS = 60 * 1000;
 const INTENTS = ['authenticate', 'login', 'register', 'link'];
 
@@ -38,7 +46,7 @@ export function safeReturnTo(value, fallback) {
 
 /**
  * A browser URL on the integrator's frontend (VOULT_APP_URL), or same-origin when unset.
- * @param {import('./index.js').VoultExpressConfig} config
+ * @param {VoultConfig} config
  * @param {string} path
  * @param {Record<string, string | undefined>} [params]
  */
@@ -53,16 +61,16 @@ function appLocation(config, path, params = {}) {
 
 /**
  * The URL Voult sends the browser back to. Must be on the app's callback allowlist.
- * Behind a proxy, set `app.set('trust proxy', 1)` or VOULT_OAUTH_CALLBACK_URL.
- * @param {import('express').Request} req
- * @param {import('./index.js').VoultExpressConfig} config
+ * Behind a proxy, let the adapter see the public URL (Express: `app.set('trust proxy', 1)`)
+ * or set VOULT_OAUTH_CALLBACK_URL.
+ * @param {Context} ctx
  */
-export function oauthCallbackUrl(req, config) {
-  return config.oauthCallbackUrl || `${req.protocol}://${req.get('host')}${req.baseUrl}/oauth/callback`;
+export function oauthCallbackUrl(ctx) {
+  return ctx.config.oauthCallbackUrl || `${ctx.url.protocol}//${ctx.url.host}${ctx.basePath}/oauth/callback`;
 }
 
-function redirectWithError(res, config, code, description) {
-  res.redirect(appLocation(config, config.oauth.errorPath, {
+function redirectWithError(config, code, description) {
+  return redirect(appLocation(config, config.oauth.errorPath, {
     voult_error: code,
     voult_error_description: description,
   }));
@@ -72,8 +80,13 @@ function errorCode(err) {
   return err?.apiCode || err?.code || 'OAUTH_FAILED';
 }
 
-function readOAuthCookie(req) {
-  const raw = readCookie(req, COOKIE_OAUTH);
+function newNonce() {
+  return base64(globalThis.crypto.getRandomValues(new Uint8Array(24)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function readOAuthCookie(ctx) {
+  const raw = ctx.read(COOKIE_OAUTH);
   if (typeof raw !== 'string') return null;
   try {
     return JSON.parse(raw);
@@ -82,122 +95,105 @@ function readOAuthCookie(req) {
   }
 }
 
-/**
- * @param {import('express').Router} router
- */
-export function registerOAuthRoutes(router) {
+/** One provider cache per handler. @returns {Route[]} */
+export function oauthRoutes() {
   let providersCache = { at: 0, value: null };
 
-  router.get(
-    '/oauth/providers',
-    catchAsync(async (req, res) => {
+  return [
+    ['GET', '/oauth/providers', async (ctx) => {
       if (!providersCache.value || Date.now() - providersCache.at > PROVIDERS_CACHE_MS) {
-        const info = await getAppInfo(req.voult);
+        const info = await getAppInfo(ctx.client);
         const providers = Object.fromEntries(
           Object.entries(info.providers || {}).map(([name, s]) => [name, Boolean(s.enabled && s.configured)])
         );
         providersCache = { at: Date.now(), value: { providers } };
       }
-      res.json(providersCache.value);
-    })
-  );
+      return json(providersCache.value);
+    }],
 
-  router.get(
-    '/oauth/:provider/start',
-    catchAsync(async (req, res) => {
-      const config = req.voultConfig;
+    ['GET', '/oauth/:provider/start', async (ctx) => {
+      const { config, client } = ctx;
       if (config.session.strategy !== 'cookie') {
-        res.status(400).json({
+        return json({
           error: {
             code: 'OAUTH_REQUIRES_COOKIE_SESSION',
             message: 'Hosted OAuth sets the session in a cookie. Use VOULT_SESSION_STRATEGY=cookie, or call the @voult/sdk OAuth functions yourself.',
             status: 400,
           },
-        });
-        return;
+        }, 400);
       }
 
-      const provider = String(req.params.provider).toLowerCase();
-      const intent = req.query.intent ?? 'authenticate';
+      const provider = String(ctx.params.provider).toLowerCase();
+      const intent = ctx.query('intent') ?? 'authenticate';
       if (!INTENTS.includes(intent)) {
-        redirectWithError(res, config, 'INVALID_INTENT', `intent must be one of: ${INTENTS.join(', ')}`);
-        return;
+        return redirectWithError(config, 'INVALID_INTENT', `intent must be one of: ${INTENTS.join(', ')}`);
       }
-      if (intent === 'link' && !req.voult.accessToken) {
-        redirectWithError(res, config, 'LOGIN_REQUIRED', 'Sign in before linking another account.');
-        return;
+      if (intent === 'link' && !client.accessToken) {
+        return redirectWithError(config, 'LOGIN_REQUIRED', 'Sign in before linking another account.');
       }
 
-      const nonce = crypto.randomBytes(24).toString('base64url');
-      const redirectUri = oauthCallbackUrl(req, config);
-      const returnTo = safeReturnTo(req.query.returnTo, config.oauth.successPath);
+      const nonce = newNonce();
+      const redirectUri = oauthCallbackUrl(ctx);
+      const returnTo = safeReturnTo(ctx.query('returnTo'), config.oauth.successPath);
 
       let authUrl;
       try {
         ({ authUrl } = intent === 'link'
-          ? await linkOAuthProvider(provider, { redirectUri, state: nonce }, req.voult)
-          : await getOAuthAuthorizationUrl(provider, { intent, redirectUri, state: nonce }, req.voult));
+          ? await linkOAuthProvider(provider, { redirectUri, state: nonce }, client)
+          : await getOAuthAuthorizationUrl(provider, { intent, redirectUri, state: nonce }, client));
       } catch (err) {
-        redirectWithError(res, config, errorCode(err), err.message);
-        return;
+        return redirectWithError(config, errorCode(err), err.message);
       }
 
       // Ties the callback to this browser: Voult echoes `state`, we compare it to this cookie.
-      res.cookie(
+      ctx.cookies.push(setCookie(
+        config,
         COOKIE_OAUTH,
         JSON.stringify({ nonce, provider, intent, returnTo, redirectUri }),
-        cookieOptions(config, { maxAge: OAUTH_COOKIE_MAX_AGE_MS })
-      );
-      res.redirect(authUrl);
-    })
-  );
+        { maxAge: OAUTH_COOKIE_MAX_AGE_MS }
+      ));
+      return redirect(authUrl);
+    }],
 
-  router.get(
-    '/oauth/callback',
-    catchAsync(async (req, res) => {
-      const config = req.voultConfig;
-      const saved = readOAuthCookie(req);
-      res.clearCookie(COOKIE_OAUTH, cookieOptions(config));
+    ['GET', '/oauth/callback', async (ctx) => {
+      const { config, client } = ctx;
+      const saved = readOAuthCookie(ctx);
+      ctx.cookies.push(clearCookie(config, COOKIE_OAUTH));
 
-      if (!saved?.nonce || req.query.state !== saved.nonce) {
-        redirectWithError(
-          res, config, 'INVALID_OAUTH_STATE',
+      if (!saved?.nonce || ctx.query('state') !== saved.nonce) {
+        return redirectWithError(
+          config, 'INVALID_OAUTH_STATE',
           'This sign-in expired or was started in another browser. Please try again.'
         );
-        return;
       }
 
-      if (req.query.error) {
-        redirectWithError(res, config, String(req.query.error), req.query.error_description && String(req.query.error_description));
-        return;
+      if (ctx.query('error')) {
+        return redirectWithError(config, ctx.query('error'), ctx.query('error_description'));
       }
 
-      if (req.query.linked === '1') {
-        res.redirect(appLocation(config, saved.returnTo, { voult_linked: saved.provider }));
-        return;
+      if (ctx.query('linked') === '1') {
+        return redirect(appLocation(config, saved.returnTo, { voult_linked: saved.provider }));
       }
 
-      if (typeof req.query.voult_code !== 'string') {
-        redirectWithError(res, config, 'MISSING_OAUTH_CODE', 'Voult did not return a sign-in code.');
-        return;
+      const voultCode = ctx.query('voult_code');
+      if (typeof voultCode !== 'string') {
+        return redirectWithError(config, 'MISSING_OAUTH_CODE', 'Voult did not return a sign-in code.');
       }
 
       let result;
       try {
-        result = await exchangeOAuthCode(req.query.voult_code, { redirectUri: saved.redirectUri }, req.voult);
+        result = await exchangeOAuthCode(voultCode, { redirectUri: saved.redirectUri }, client);
       } catch (err) {
-        redirectWithError(res, config, errorCode(err), err.message);
-        return;
+        return redirectWithError(config, errorCode(err), err.message);
       }
 
       if (result.mfaRequired) {
-        res.cookie(COOKIE_MFA_PENDING, result.mfaPendingToken, cookieOptions(config, { maxAge: MFA_PENDING_MAX_AGE_MS }));
-        res.redirect(appLocation(config, config.oauth.mfaPath));
-        return;
+        ctx.cookies.push(setCookie(config, COOKIE_MFA_PENDING, result.mfaPendingToken, { maxAge: MFA_PENDING_MAX_AGE_MS }));
+        return redirect(appLocation(config, config.oauth.mfaPath));
       }
 
-      // Session cookies are written by attachSessionPersistence as this redirect goes out.
-      res.redirect(appLocation(config, saved.returnTo));
-    })
-  );
+      // The session cookies go out with this redirect (sessionCookies, in the handler).
+      return redirect(appLocation(config, saved.returnTo));
+    }],
+  ];
 }

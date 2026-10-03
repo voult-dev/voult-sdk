@@ -2,6 +2,16 @@
 
 All notable changes to `@voult/express` are documented here.
 
+## 0.3.0-beta.0
+
+The router now runs on [`@voult/core`](../core): one implementation of every route on the Fetch API (`Request → Response`), which `@voult/next` will share. This package is the Express adapter. **The public API is unchanged** (`createVoultRouter`, `createVoultMiddleware`, `requireAuth`, `loadConfigFromEnv`), and so are routes, responses, cookie names, flags and the signed-cookie format, so existing sessions keep working across the upgrade. Every 0.2.1 test passes unedited.
+
+- `express.json()` is no longer needed for the router: it reads JSON bodies itself (100 kB limit, as before). If your app already parses the body, that still works.
+- Invalid JSON now answers `400 INVALID_JSON` (was `400 INTERNAL_ERROR`); a body over 100 kB answers `413 PAYLOAD_TOO_LARGE`.
+- Router JSON responses no longer carry an `ETag` header.
+- Requests under the mount path that the router doesn't serve still reach your own routes with `req.body` and `req.voult` set.
+- New dependency: `@voult/core`. The internal files `src/config.js`, `src/routes.js`, `src/oauth.js`, `src/tokens.js`, `src/errors.js` and `src/catchAsync.js` are gone (they were never exported; `exports` only allows the package root).
+
 ## 0.2.1
 
 - **Fix:** `GET /session` reported a signed-in user as signed out once the 1-hour access cookie expired, even with a valid 30-day refresh cookie. It now renews quietly (and clears the cookies if the refresh token is dead).

@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.2
+
+- No code changes. Published manually (no provenance) before the release pipeline was set up.
+
 ## 0.2.1
 
 - `voult init` now links to the dashboard of the Voult it targets (`https://staging.voult.dev/dashboard` during the preview, or `$VOULT_BASE_URL/dashboard`). 0.2.0 linked `www.voult.dev/dashboard`, which is the landing site and returns 404.

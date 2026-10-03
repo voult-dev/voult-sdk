@@ -29,7 +29,7 @@ Every package in this repo is published by CI, from a git tag, with [npm provena
 
 Then it runs the package's tests and `npm publish --provenance --access public --tag <latest|next>`. Auth is [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) (GitHub OIDC): there's no `NPM_TOKEN` secret to leak or rotate.
 
-Run the same check locally before tagging: `node scripts/check-release.mjs @voult/express@0.3.0`.
+Run the same check locally, from the repo root, before tagging: `node scripts/check-release.mjs @voult/express@0.3.0`.
 
 ### A release failed
 

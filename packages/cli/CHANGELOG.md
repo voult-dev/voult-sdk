@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.3
+
+- No code changes. First release published from CI (`release.yml`) with npm provenance.
+
 ## 0.2.2
 
 - No code changes. Published manually (no provenance) before the release pipeline was set up.

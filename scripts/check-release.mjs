@@ -52,6 +52,10 @@ function main(tag) {
   const dir = findWorkspace(release.name);
   if (!dir) throw new Error(`no workspace under packages/ is named ${release.name}`);
 
+  // The tag points at a commit, but npm pack reads the files on disk: they must be the same.
+  const dirty = execFileSync('git', ['status', '--porcelain', '--', dir], { cwd: ROOT, encoding: 'utf8' }).trim();
+  if (dirty) throw new Error(`${dir} has uncommitted changes. Commit and push them, then tag:\n${dirty}`);
+
   const [pack] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: path.join(ROOT, dir), encoding: 'utf8' }));
   const changelogPath = path.join(ROOT, dir, 'CHANGELOG.md');
   const changelog = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : null;

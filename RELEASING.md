@@ -2,6 +2,8 @@
 
 Every package in this repo is published by CI, from a git tag, with [npm provenance](https://docs.npmjs.com/generating-provenance-statements). Nobody runs `npm publish` from a laptop except in the [emergency fallback](#manual-fallback-last-resort).
 
+Versioning, compatibility and deprecation rules: [voult/docs/integration/VERSIONING.md](https://github.com/voult-dev/voult/blob/main/docs/integration/VERSIONING.md).
+
 ## Releasing a package
 
 1. **Bump** `version` in `packages/<pkg>/package.json`. Prereleases (`0.3.0-beta.0`) publish under the `next` dist-tag; everything else becomes `latest`.

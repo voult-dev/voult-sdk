@@ -1,6 +1,7 @@
 import { setCookieHeader } from './cookies.js';
 import { normalizeVoultError } from './errors.js';
 import { oauthRoutes } from './oauth.js';
+import { passwordlessRoutes } from './passwordless.js';
 import { authRoutes, json } from './routes.js';
 import { getSessionFromRequest, renewSession, sessionCookies } from './session.js';
 
@@ -104,7 +105,7 @@ const defaultNotFound = () => Response.json(
  * @param {VoultConfig} config  A normalized config (`resolveConfig` / `loadConfigFromEnv`).
  */
 export function createVoultHandler(config) {
-  const routes = [...authRoutes, ...oauthRoutes()].map(compile);
+  const routes = [...authRoutes, ...passwordlessRoutes, ...oauthRoutes()].map(compile);
 
   /**
    * @param {Request} request

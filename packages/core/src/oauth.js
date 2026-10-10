@@ -50,7 +50,7 @@ export function safeReturnTo(value, fallback) {
  * @param {string} path
  * @param {Record<string, string | undefined>} [params]
  */
-function appLocation(config, path, params = {}) {
+export function appLocation(config, path, params = {}) {
   const query = new URLSearchParams(
     Object.entries(params).filter(([, value]) => value != null && value !== '')
   ).toString();
@@ -69,14 +69,14 @@ export function oauthCallbackUrl(ctx) {
   return ctx.config.oauthCallbackUrl || `${ctx.url.protocol}//${ctx.url.host}${ctx.basePath}/oauth/callback`;
 }
 
-function redirectWithError(config, code, description) {
+export function redirectWithError(config, code, description) {
   return redirect(appLocation(config, config.oauth.errorPath, {
     voult_error: code,
     voult_error_description: description,
   }));
 }
 
-function errorCode(err) {
+export function errorCode(err) {
   return err?.apiCode || err?.code || 'OAUTH_FAILED';
 }
 

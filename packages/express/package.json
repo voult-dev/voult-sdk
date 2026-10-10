@@ -1,6 +1,6 @@
 {
   "name": "@voult/express",
-  "version": "0.3.0-beta.0",
+  "version": "0.3.0",
   "description": "Mountable Express BFF for Voult authentication",
   "type": "module",
   "main": "./src/index.js",
@@ -35,7 +35,7 @@
     "@voult/sdk": ">=0.2.0"
   },
   "dependencies": {
-    "@voult/core": "^0.1.0",
+    "@voult/core": "^0.2.0",
     "cookie-parser": "^1.4.7"
   },
   "devDependencies": {

@@ -204,6 +204,14 @@ export async function startTestServer() {
       }
 
       if (path === '/api/validate-magic-link') {
+        if (body.token === 'mfa-link-token') {
+          send(res, 200, { mfaRequired: true, mfaPendingToken: 'mfa-pending-token', message: 'MFA verification required' });
+          return;
+        }
+        if (body.token === 'used-token') {
+          send(res, 400, { error: { code: 'INVALID_OR_EXPIRED_TOKEN', message: 'Invalid or expired token', status: 400 } });
+          return;
+        }
         send(res, 200, {
           success: true,
           message: 'Authentication successful',
@@ -411,7 +419,14 @@ export async function startTestServer() {
         if (!requireAuth(req, res, state)) {
           return;
         }
-        send(res, 200, { sessions: [{ id: 'session-1', device: 'Chrome' }] });
+        // Like the API: a server that sends the caller's refresh token gets its own session marked.
+        const presented = req.headers['x-refresh-token'];
+        send(res, 200, {
+          sessions: [
+            { id: 'session-1', device: 'Chrome', ...(presented && { isCurrent: presented === 'refresh-1' }) },
+            ...(presented ? [{ id: 'session-2', device: 'Firefox', isCurrent: false }] : []),
+          ],
+        });
         return;
       }
 

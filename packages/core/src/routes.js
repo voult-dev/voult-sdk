@@ -1,7 +1,16 @@
 import {
   AuthenticationError,
+  ENDPOINTS,
+  deleteUser,
+  disableMfa,
+  enableMfa,
   getCurrentUser,
+  getLinkedOAuthProviders,
   getMfaStatus,
+  regenerateMfaBackupCodes,
+  revokeSession,
+  setupMfa,
+  unlinkOAuthProvider,
   refreshSession,
   resetPassword,
   sendPasswordResetEmail,
@@ -15,7 +24,14 @@ import {
   verifyMfaLogin,
 } from '@voult/sdk';
 import { normalizeVoultError } from './errors.js';
-import { COOKIE_MFA_PENDING, MFA_PENDING_MAX_AGE_MS, clearCookie, setCookie, toPublicAuthResult } from './session.js';
+import {
+  COOKIE_MFA_PENDING,
+  MFA_PENDING_MAX_AGE_MS,
+  clearCookie,
+  clearSessionCookies,
+  setCookie,
+  toPublicAuthResult,
+} from './session.js';
 
 /**
  * @typedef {import('./handler.js').Context} Context
@@ -44,13 +60,30 @@ export function authenticated(handler) {
 }
 
 /** @param {Context} ctx @param {object} result */
-function authResult(ctx, result) {
+export function authResult(ctx, result) {
   // Park the MFA pending token server-side too (as hosted OAuth does), so /mfa/verify needs only
   // the code and a page reload doesn't lose the sign-in. The JSON still carries it for older clients.
   if (result?.mfaRequired && result.mfaPendingToken && ctx.config.session.strategy === 'cookie') {
     ctx.cookies.push(setCookie(ctx.config, COOKIE_MFA_PENDING, result.mfaPendingToken, { maxAge: MFA_PENDING_MAX_AGE_MS }));
   }
   return json(toPublicAuthResult(result, ctx.config));
+}
+
+/** The session is over on this device (account disabled, own session revoked): drop it and its cookies. */
+function endLocalSession(ctx) {
+  ctx.client.clearSession();
+  ctx.cookies.push(...clearSessionCookies(ctx.config));
+}
+
+/**
+ * The user's sessions, with `isCurrent` on this browser's. The API marks it when it sees the
+ * refresh token, which only this server holds (never the page).
+ * @param {Context} ctx
+ */
+async function listSessions(ctx) {
+  const headers = ctx.client.refreshToken ? { 'X-Refresh-Token': ctx.client.refreshToken } : {};
+  const response = await ctx.client.get(ENDPOINTS.SESSIONS, { requireAuth: true, headers });
+  return { sessions: response.sessions ?? [] };
 }
 
 /** @type {Route[]} */
@@ -131,4 +164,41 @@ export const authRoutes = [
   }],
 
   ['GET', '/mfa/status', authenticated(async (ctx) => json(await getMfaStatus(ctx.client)))],
+
+  // MFA enrolment: setup returns the secret, QR code and backup codes; enable confirms with a code.
+  ['POST', '/mfa/setup', authenticated(async (ctx) => json(await setupMfa(ctx.client)))],
+  ['POST', '/mfa/enable', authenticated(async (ctx) => json(await enableMfa(ctx.body.code, ctx.client)))],
+  // `password` is optional so accounts created with Google/GitHub (no password) can turn MFA off.
+  ['POST', '/mfa/disable', authenticated(async (ctx) => (
+    json(await disableMfa(ctx.body.password, ctx.body.code, ctx.client))
+  ))],
+  ['POST', '/mfa/backup-codes', authenticated(async (ctx) => (
+    json(await regenerateMfaBackupCodes(ctx.body.code, ctx.client))
+  ))],
+  // Abandon a sign-in waiting for its MFA code (there's no session yet, so /logout can't).
+  ['POST', '/mfa/cancel', async (ctx) => {
+    ctx.cookies.push(clearCookie(ctx.config, COOKIE_MFA_PENDING));
+    return json({ success: true });
+  }],
+
+  ['GET', '/sessions', authenticated(async (ctx) => json(await listSessions(ctx)))],
+  ['DELETE', '/sessions/:id', authenticated(async (ctx) => {
+    const { sessions } = await listSessions(ctx);
+    const current = sessions.some((session) => String(session.id) === ctx.params.id && session.isCurrent);
+    const result = await revokeSession(ctx.params.id, ctx.client);
+    if (current) endLocalSession(ctx);
+    return json({ ...result, current });
+  })],
+
+  ['GET', '/oauth/linked', authenticated(async (ctx) => json(await getLinkedOAuthProviders(ctx.client)))],
+  ['DELETE', '/oauth/linked/:provider', authenticated(async (ctx) => (
+    json(await unlinkOAuthProvider(ctx.params.provider, ctx.client))
+  ))],
+
+  // Voult disables the account (it can be re-enabled), and this browser is signed out.
+  ['DELETE', '/user/me', authenticated(async (ctx) => {
+    const result = await deleteUser(ctx.client);
+    endLocalSession(ctx);
+    return json(result);
+  })],
 ];

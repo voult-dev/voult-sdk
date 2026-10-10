@@ -52,6 +52,43 @@ export interface VoultActions {
   /** Finishes MFA for password and OAuth sign-ins alike: pass only the 6-digit (or backup) code. */
   verifyMfa(code: string): Promise<unknown>;
   refresh(): Promise<unknown>;
+  mfa: {
+    status(): Promise<{ mfaEnabled: boolean; [key: string]: unknown }>;
+    /** Start enrolment: `{ secret, qrCode, backupCodes }`. Confirm with `enable(code)`. */
+    setup(): Promise<{ secret: string; qrCode: string; backupCodes: string[]; [key: string]: unknown }>;
+    enable(code: string): Promise<unknown>;
+    /** `password` can be left out for accounts created with Google/GitHub. */
+    disable(input: { code: string; password?: string }): Promise<unknown>;
+    regenerateBackupCodes(code: string): Promise<{ backupCodes: string[]; [key: string]: unknown }>;
+    /** Abandon a sign-in waiting for its MFA code. */
+    cancel(): Promise<void>;
+  };
+  sessions: {
+    list(): Promise<{ sessions: Array<{ id: string; isCurrent?: boolean; [key: string]: unknown }> }>;
+    /** Revoking this browser's own session signs it out (`current: true`). */
+    revoke(sessionId: string): Promise<{ success: boolean; current: boolean; message?: string }>;
+  };
+  linkedAccounts: {
+    list(): Promise<{ providers: unknown[] }>;
+    unlink(provider: string): Promise<{ success: boolean }>;
+  };
+  passkeys: {
+    list(): Promise<unknown>;
+    /** WebAuthn creation options for `navigator.credentials.create()` / @simplewebauthn/browser. */
+    registrationOptions(deviceName?: string): Promise<{ options: unknown; [key: string]: unknown }>;
+    register(credential: unknown, deviceName?: string): Promise<unknown>;
+    rename(credentialId: string, deviceName: string): Promise<unknown>;
+    remove(credentialId: string): Promise<unknown>;
+    loginOptions(email?: string): Promise<{ options: unknown; [key: string]: unknown }>;
+    /** Finishes a passkey sign-in; like signIn(). */
+    signIn(credential: unknown): Promise<{ mfaRequired: boolean; user?: VoultUser | null }>;
+  };
+  magicLink: {
+    /** Always `{ sent: true }` for a well-formed email, whether or not it has an account. */
+    send(email: string, options?: { returnTo?: string }): Promise<{ sent: true }>;
+  };
+  /** Voult disables the account (it can be re-enabled); this browser is signed out. */
+  deleteAccount(): Promise<unknown>;
 }
 
 export function useVoult(): VoultActions;

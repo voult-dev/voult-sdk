@@ -2,7 +2,14 @@
 
 All notable changes to `@voult/express` are documented here.
 
+## 0.3.0
+
+**Every end-user feature is now a router route**, so your server is just the mount lines: MFA setup/enable/disable/backup codes/cancel, sessions (list with `isCurrent`, revoke), linked accounts (list, unlink), account deletion, passkeys (register, list, rename, delete, sign in) and magic links (send, verify). The full list and the request bodies are in [`@voult/core`'s 0.2.0 notes](../core/CHANGELOG.md) and the quick start's route reference. If you wrote these routes yourself (e.g. `/api/mfa/setup` outside the router), you can delete them; if you mounted your own handlers at the **same** paths under the router, the router's now answer first.
+
+Plus everything in 0.3.0-beta.0 below.
+
 ## 0.3.0-beta.0
+
 
 The router now runs on [`@voult/core`](../core): one implementation of every route on the Fetch API (`Request → Response`), which `@voult/next` will share. This package is the Express adapter. **The public API is unchanged** (`createVoultRouter`, `createVoultMiddleware`, `requireAuth`, `loadConfigFromEnv`), and so are routes, responses, cookie names, flags and the signed-cookie format, so existing sessions keep working across the upgrade. Every 0.2.1 test passes unedited.
 

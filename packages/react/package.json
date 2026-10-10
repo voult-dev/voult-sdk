@@ -1,6 +1,6 @@
 {
   "name": "@voult/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React session state, sign-in actions and OAuth buttons for apps using @voult/express",
   "type": "module",
   "main": "./src/index.js",

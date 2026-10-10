@@ -1,7 +1,7 @@
 {
   "name": "@voult/core",
-  "version": "0.1.0",
-  "description": "The Voult auth router on the Fetch API (Request → Response), shared by @voult/express and @voult/next",
+  "version": "0.2.0",
+  "description": "The Voult auth router on the Fetch API (Request \u2192 Response), shared by @voult/express and @voult/next",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",

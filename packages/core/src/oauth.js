@@ -100,6 +100,19 @@ export function oauthRoutes() {
   let providersCache = { at: 0, value: null };
 
   return [
+    // For pages rendered where cookies can't be written (Next.js Server Components): renewing
+    // there would rotate the refresh token without saving it. They send the browser here
+    // instead; this renews, saves the new cookies and goes back.
+    ['GET', '/session/renew', async (ctx) => {
+      // The caller already knows the access token is stale (its cookie outlives the token).
+      ctx.client.accessToken = null;
+      await ctx.renew();
+      const back = safeReturnTo(ctx.query('returnTo'), ctx.config.oauth.successPath);
+      return ctx.client.accessToken
+        ? redirect(appLocation(ctx.config, back))
+        : redirectWithError(ctx.config, 'SESSION_EXPIRED', 'Please sign in again.');
+    }],
+
     ['GET', '/oauth/providers', async (ctx) => {
       if (!providersCache.value || Date.now() - providersCache.at > PROVIDERS_CACHE_MS) {
         const info = await getAppInfo(ctx.client);

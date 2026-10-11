@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/core` are documented here.
 
+## 0.2.1
+
+- New route `GET /session/renew?returnTo=/path`: renews the session from the refresh cookie, saves the new cookies and redirects back (or to `errorPath?voult_error=SESSION_EXPIRED`). For pages rendered where cookies can't be written, such as Next.js Server Components: renewing there would rotate the refresh token without saving it, and Voult's reuse detection would then end the session.
+- New entry point `@voult/core/cookies` (signing and cookie parsing only, no `@voult/sdk`), for Edge middleware.
+- `parseUserCookie` and `safeReturnTo` are exported.
+
 ## 0.2.0
 
 The router now serves every end-user feature, so apps write no auth route handlers. New routes (below the mount path):

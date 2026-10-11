@@ -88,6 +88,9 @@ export function restoreSession(
   config: VoultConfig
 ): IncomingSession;
 export function sessionCookies(client: VoultClient, incoming: IncomingSession, config: VoultConfig): CookieToSet[];
+/** `value` when it's a same-site relative path (`/x`, not `//x` or `https://…`), else `fallback`. */
+export function safeReturnTo(value: unknown, fallback: string): string;
+export function parseUserCookie(value: unknown): Record<string, unknown> | null;
 export function renewSession(client: VoultClient, read: ReadCookie, config: VoultConfig): Promise<CookieToSet[]>;
 
 export function readCookieHeader(header: string | null | undefined, secret?: string): Promise<{

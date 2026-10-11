@@ -198,3 +198,23 @@ describe('magic links', () => {
     expect(res.headers.location).toMatch(`${APP_URL}/login?voult_error=INVALID_OR_EXPIRED_TOKEN`);
   });
 });
+
+describe('GET /session/renew (for pages that cannot write cookies, e.g. Next.js Server Components)', () => {
+  const cookieOf = (res, name) => res.headers['set-cookie'].map((c) => c.split(';')[0]).find((c) => c.startsWith(`${name}=`));
+
+  it('renews even with a stale access cookie, saves the rotated cookies and goes back to returnTo', async () => {
+    const app = await mount();
+    const login = await request(app).post('/api/auth/email-login').send({ email: 'user@example.com', password: 'StrongPass123!' });
+    const res = await request(app).get('/api/auth/session/renew?returnTo=/account')
+      .set('Cookie', [cookieOf(login, 'voult_access'), cookieOf(login, 'voult_refresh'), cookieOf(login, 'voult_user')].join('; '));
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`${APP_URL}/account`);
+    expect(fake.state.refreshCount).toBe(1);
+    expect(cookieOf(res, 'voult_access')).toMatch(/access-2/);
+  });
+
+  it('a dead refresh token goes to the error page and clears the session', async () => {
+    const res = await request(await mount()).get('/api/auth/session/renew?returnTo=//evil.example').set('Cookie', 'voult_refresh=revoked-token');
+    expect(res.headers.location).toBe(`${APP_URL}/login?voult_error=SESSION_EXPIRED&voult_error_description=Please+sign+in+again.`);
+  });
+});

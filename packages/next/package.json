@@ -1,0 +1,66 @@
+{
+  "name": "@voult/next",
+  "version": "0.1.0",
+  "description": "Voult authentication for Next.js App Router: one catch-all route, getSession() for Server Components, and an Edge middleware guard",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./middleware": {
+      "types": "./src/middleware.d.ts",
+      "import": "./src/middleware.js",
+      "default": "./src/middleware.js"
+    }
+  },
+  "files": [
+    "src",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "keywords": [
+    "voult",
+    "nextjs",
+    "next",
+    "authentication",
+    "app-router"
+  ],
+  "author": "Samuel Olabode",
+  "license": "MIT",
+  "peerDependencies": {
+    "next": ">=14.2",
+    "react": ">=18",
+    "@voult/sdk": ">=0.2.0"
+  },
+  "dependencies": {
+    "@voult/core": "^0.2.1"
+  },
+  "devDependencies": {
+    "@voult/sdk": "*",
+    "next": "^16.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "vitest": "^3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voult-dev/voult-sdk.git",
+    "directory": "packages/next"
+  },
+  "bugs": {
+    "url": "https://github.com/voult-dev/voult-sdk/issues"
+  },
+  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/next#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

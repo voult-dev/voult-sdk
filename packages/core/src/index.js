@@ -3,6 +3,7 @@
 export { createVoultHandler } from './handler.js';
 export { loadConfigFromEnv, resolveConfig } from './config.js';
 export { normalizeVoultError } from './errors.js';
+export { safeReturnTo } from './oauth.js';
 export {
   COOKIE_ACCESS,
   COOKIE_MFA_PENDING,
@@ -11,6 +12,7 @@ export {
   COOKIE_USER,
   createVoultClient,
   getSessionFromRequest,
+  parseUserCookie,
   renewSession,
   restoreSession,
   sessionCookies,

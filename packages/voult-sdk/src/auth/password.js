@@ -9,6 +9,7 @@ import {
   validateToken,
 } from '../utils/validation.js';
 import { ValidationError } from '../errors.js';
+import { isVoultClient } from '../utils/helpers.js';
 
 /**
  * Request a password reset email
@@ -39,7 +40,7 @@ export async function sendPasswordResetEmail(email, client) {
  * @param {import('../client.js').VoultClient} client
  */
 export async function resetPassword(token, newPassword, options = {}, client) {
-  if (options?.constructor?.name === 'VoultClient') {
+  if (isVoultClient(options)) {
     client = options;
     options = {};
   }

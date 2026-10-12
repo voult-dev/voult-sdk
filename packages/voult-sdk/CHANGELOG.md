@@ -2,6 +2,11 @@
 
 All notable changes to `@voult/sdk` are documented here.
 
+## 0.2.1
+
+- **Fix: SDK functions rejected the client in minified builds** ("Voult client instance is required"). They recognised a client by its class name (`constructor.name === 'VoultClient'`), which bundlers rename when minifying, so every call failed in Next.js production builds (`next build`, Vercel) and through `@voult/next`. A client is now recognised by a `Symbol.for('@voult/sdk.client')` brand, which survives minification and also works across two copies of the SDK. Found by the `@voult/next` end-to-end suite.
+- New export `isVoultClient(value)`.
+
 ## 0.2.0
 
 Matches the Phase 2 hosted-OAuth API. **Breaking** changes are marked.

@@ -11,11 +11,21 @@ import { VoultClient } from '../client.js';
  * @param {VoultClient} client
  * @returns {{ options: Object, client: VoultClient }}
  */
+// Set on every VoultClient. A class-name check breaks once a bundler minifies the code (Next.js
+// production builds), and `instanceof` breaks with two copies of the SDK; a registry symbol
+// survives both.
+export const VOULT_CLIENT = Symbol.for('@voult/sdk.client');
+
+/** @returns {boolean} true for a VoultClient, minified or from another copy of the SDK */
+export function isVoultClient(value) {
+  return Boolean(value && value[VOULT_CLIENT] === true);
+}
+
 export function resolveClientArg(options = {}, client) {
-  if (client && client.constructor?.name === 'VoultClient') {
+  if (isVoultClient(client)) {
     return { options: options || {}, client };
   }
-  if (options && options.constructor?.name === 'VoultClient') {
+  if (isVoultClient(options)) {
     return { options: {}, client: options };
   }
   throw new ValidationError('Voult client instance is required', 'client');

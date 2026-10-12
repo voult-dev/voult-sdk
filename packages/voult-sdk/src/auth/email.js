@@ -5,6 +5,7 @@
 import { ENDPOINTS } from '../constants.js';
 import { validateToken } from '../utils/validation.js';
 import { ValidationError } from '../errors.js';
+import { isVoultClient } from '../utils/helpers.js';
 
 /**
  * Verify a user's email using the token from the verification link
@@ -14,7 +15,7 @@ import { ValidationError } from '../errors.js';
  * @param {import('../client.js').VoultClient} client
  */
 export async function verifyEmail(token, options = {}, client) {
-  if (options?.constructor?.name === 'VoultClient') {
+  if (isVoultClient(options)) {
     client = options;
     options = {};
   }

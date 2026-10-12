@@ -18,6 +18,7 @@ import {
   parseApiErrorResponse,
   buildRequestContext,
 } from './utils/apiError.js';
+import { VOULT_CLIENT } from './utils/helpers.js';
 
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
@@ -48,6 +49,8 @@ export class VoultClient {
     this.clientSecret = config.clientSecret;
     this.useCookies = config.useCookies === true;
     this.csrfToken = config.csrfToken || null;
+
+    Object.defineProperty(this, VOULT_CLIENT, { value: true });
 
     // Token storage (in memory by default for security)
     this.accessToken = null;

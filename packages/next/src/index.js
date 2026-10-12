@@ -89,11 +89,13 @@ const hasIdentity = (user) => Boolean(user?.id || user?.email);
  */
 export async function getSession(options) {
   const config = configFor(options);
-  const incomingHeaders = await headers();
+  const store = await cookies();
+  // From cookies(), not the raw Cookie header: after a server action sets cookies, Next re-renders
+  // the page in the same request, and only cookies() shows the new values there.
+  const cookieHeader = store.getAll().map(({ name, value }) => `${name}=${encodeURIComponent(value)}`).join('; ');
+  const authorization = (await headers()).get('authorization');
   const request = new Request('http://voult.local/', {
-    headers: Object.fromEntries(
-      ['cookie', 'authorization'].flatMap((name) => (incomingHeaders.get(name) ? [[name, incomingHeaders.get(name)]] : []))
-    ),
+    headers: { ...(cookieHeader && { cookie: cookieHeader }), ...(authorization && { authorization }) },
   });
   const { client, incoming, read } = await getSessionFromRequest(request, config);
 
@@ -110,7 +112,6 @@ export async function getSession(options) {
 
   if (typeof read(COOKIE_REFRESH) !== 'string' || !read(COOKIE_REFRESH)) return null;
 
-  const store = await cookies();
   if (!cookiesWritable(store)) {
     const user = parseUserCookie(read(COOKIE_USER));
     return hasIdentity(user) ? { user, verified: false } : null;

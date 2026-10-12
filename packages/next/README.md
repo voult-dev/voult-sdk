@@ -59,6 +59,8 @@ export default async function Account() {
 - In route handlers and server actions, `getSession()` renews and sets the cookies itself.
 - `requireSession({ signInPath: '/login' })`: change the sign-in page.
 
+**After signing in or out, navigate with a full page load** (`window.location.assign(path)`), not `router.push()`. In production Next prefetches links, so its client router may hold a response fetched while the visitor was signed out (such as the proxy's redirect to `/login`) and replay it after sign-in.
+
 ## 4. Optional: redirect signed-out visitors early
 
 ```js

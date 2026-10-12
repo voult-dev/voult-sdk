@@ -32,10 +32,17 @@ const cookieHeader = (res) => res.headers.getSetCookie().map((c) => c.split(';')
 function asRequest(cookie, { writable = false, path } = {}) {
   const written = [];
   nextHeaders.headers.mockResolvedValue(new Headers({ ...(cookie && { cookie }), ...(path && { 'x-voult-path': path }) }));
+  const jar = Object.fromEntries((cookie ?? '').split('; ').filter(Boolean).map((pair) => {
+    const i = pair.indexOf('=');
+    return [pair.slice(0, i), decodeURIComponent(pair.slice(i + 1))];
+  }));
   nextHeaders.cookies.mockResolvedValue({
+    getAll: () => Object.entries(jar).map(([name, value]) => ({ name, value })),
     set: (name, value, opts) => {
       if (!writable) throw new Error('Cookies can only be modified in a Server Action or Route Handler.');
-      if (name !== 'voult_probe') written.push({ name, value, opts });
+      if (name === 'voult_probe') return;
+      written.push({ name, value, opts });
+      jar[name] = value; // like Next: what a server action sets, cookies() then returns
     },
   });
   return written;
@@ -113,6 +120,15 @@ describe('getSession (C4)', () => {
     expect(await getSession(options)).toBeNull();
     expect(written.map((c) => c.name)).toEqual(['voult_access', 'voult_refresh', 'voult_user']);
     expect(written.every((c) => c.opts.expires.getTime() === 1)).toBe(true);
+  });
+
+  it('after a server action renewed, a re-render in the same request sees the new cookies', async () => {
+    asRequest(await expiredSession(), { writable: true });
+    expect((await getSession(options)).verified).toBe(true);
+    // Same request, now rendering: cookies() returns what the action set.
+    nextHeaders.cookies.mockResolvedValue({ ...(await nextHeaders.cookies()), set: () => { throw new Error('read-only'); } });
+    expect(await getSession(options)).toMatchObject({ verified: true, user: { email: 'user@example.com' } });
+    expect(fake.state.refreshCount).toBe(1);
   });
 });
 

@@ -216,6 +216,7 @@ function createFakeClient() {
     },
   };
   client.constructor = VoultClient;
+  client[Symbol.for('@voult/sdk.client')] = true; // what the SDK checks (survives minification)
   return client;
 }
 

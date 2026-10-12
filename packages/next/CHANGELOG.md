@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/next` are documented here.
 
+## 0.1.1
+
+- **Fix: after a server action renewed the session, the page re-rendered as if it hadn't.** `getSession()` read the raw `Cookie` request header, which doesn't include cookies a server action sets; Next re-renders the page in the same request, so the layout saw the expired token and `requireSession()` redirected away. It now reads `cookies()`, which does. Found by the end-to-end suite (`voult-next-e2e`).
+- README: navigate with a full page load after signing in or out (Next's router cache can replay a redirect prefetched while signed out).
+- Peer dependency `@voult/sdk` raised to `>=0.2.1`, which fixes "Voult client instance is required" in minified production builds.
+
 ## 0.1.0
 
 First release: Voult for the Next.js App Router (Next 14.2+, tested on 16).

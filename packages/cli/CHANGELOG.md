@@ -2,6 +2,11 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.4
+
+- **`voult init --yes`**: no prompts, for scripts, CI and `create-voult-app`. Pass `--client-id` and `--client-secret`, or put the secret in `VOULT_CLIENT_SECRET` so it stays out of shell history. Fails without writing anything if either is missing. The secret is never printed.
+- New `init` flags (each answers its prompt; useful without `--yes` too): `--client-id`, `--client-secret`, `--strategy cookie|bearer`, `--base-url` (writes `VOULT_BASE_URL`), `--quiet` (skips the server snippet and smoke-test hints).
+
 ## 0.2.3
 
 - No code changes. First release published from CI (`release.yml`) with npm provenance.

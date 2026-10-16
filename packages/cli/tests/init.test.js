@@ -124,3 +124,46 @@ test('points at the same Voult as @voult/sdk (dashboard link can\'t drift)', asy
   await runInit(['--force'], io);
   assert.ok(logs.some((line) => line.includes(`${DEFAULT_BASE_URL}/dashboard`)));
 });
+
+// --yes: no prompts (create-voult-app and CI run it this way).
+const noPrompts = () => ({
+  cwd,
+  log: (msg) => noPrompts.logs.push(msg),
+  env: {},
+  ask: async () => { throw new Error('prompted for text'); },
+  askSecret: async () => { throw new Error('prompted for a secret'); },
+});
+noPrompts.logs = [];
+
+test('--yes with flags writes .env without prompting and never prints the secret', async () => {
+  noPrompts.logs = [];
+  const result = await runInit(['--yes', '--client-id', 'cid_123', '--client-secret=super-secret-value', '--base-url', 'http://127.0.0.1:4100'], noPrompts());
+  assert.deepEqual(result, { wrote: true, strategy: 'cookie' });
+  const env = fs.readFileSync(path.join(cwd, '.env'), 'utf8');
+  assert.match(env, /^VOULT_BASE_URL=http:\/\/127\.0\.0\.1:4100$/m);
+  assert.match(env, /^VOULT_CLIENT_ID=cid_123$/m);
+  assert.match(env, /^VOULT_CLIENT_SECRET=super-secret-value$/m);
+  assert.match(env, /^VOULT_SESSION_SECRET=[0-9a-f]{64}$/m);
+  assert.ok(!noPrompts.logs.join('\n').includes('super-secret-value'));
+});
+
+test('--yes takes the secret from VOULT_CLIENT_SECRET (keeps it out of shell history)', async () => {
+  await runInit(['--yes', '--client-id', 'cid_123', '--quiet'], { ...noPrompts(), env: { VOULT_CLIENT_SECRET: 'from-env' } });
+  assert.match(fs.readFileSync(path.join(cwd, '.env'), 'utf8'), /^VOULT_CLIENT_SECRET=from-env$/m);
+});
+
+test('--yes without credentials fails clearly and writes nothing', async () => {
+  await assert.rejects(() => runInit(['--yes'], noPrompts()), /With --yes, pass --client-id and --client-secret/);
+  assert.ok(!fs.existsSync(path.join(cwd, '.env')));
+});
+
+test('flags without --yes skip only their own prompt', async () => {
+  const asked = [];
+  await runInit(['--client-id', 'cid_flag'], {
+    cwd, log: () => {}, env: {},
+    ask: async (q) => { asked.push(q); return ''; },
+    askSecret: async (q) => { asked.push(q); return 'typed-secret'; },
+  });
+  assert.deepEqual(asked, ['VOULT_CLIENT_SECRET', 'Session strategy — cookie or bearer']);
+  assert.match(fs.readFileSync(path.join(cwd, '.env'), 'utf8'), /^VOULT_CLIENT_ID=cid_flag$/m);
+});

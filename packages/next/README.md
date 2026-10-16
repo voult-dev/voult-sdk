@@ -73,7 +73,7 @@ export const config = { matcher: ['/((?!_next/|favicon.ico|.*\\..*).*)'] };
 
 Import it from **`@voult/next/middleware`**, not `@voult/next`: that entry point is Edge-safe (WebCrypto only, no `@voult/sdk`).
 
-It only checks that a correctly **signed** session cookie exists, so it is a UX guard, not the authority: it can't see a revoked session. Pages that must be protected call `requireSession()`. It also records the request path so `requireSession()` can send users back after signing in. The auth routes and the sign-in page are always public.
+It only checks that a correctly **signed** session cookie exists, so it is a UX guard, not the authority: it can't see a revoked session. Pages that must be protected call `requireSession()`. It also records the request path so `requireSession()` can send users back after signing in. The auth routes and the sign-in page are always public, and `/api/*` is never redirected (a `fetch()` would get the sign-in page's HTML instead of your route's 401 JSON): API routes check `getSession()` themselves.
 
 ## License
 

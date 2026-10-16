@@ -1,0 +1,45 @@
+{
+  "name": "create-voult-app",
+  "version": "0.1.0",
+  "description": "npx create-voult-app: a new Express + React, Next.js or minimal app with Voult sign-in already wired up",
+  "type": "module",
+  "bin": {
+    "create-voult-app": "bin/create-voult-app.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "prepack": "node scripts/bundle-templates.mjs",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "voult",
+    "create-app",
+    "starter",
+    "authentication",
+    "nextjs",
+    "express",
+    "react"
+  ],
+  "author": "Samuel Olabode",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voult-dev/voult-sdk.git",
+    "directory": "packages/create-voult-app"
+  },
+  "bugs": {
+    "url": "https://github.com/voult-dev/voult-sdk/issues"
+  },
+  "homepage": "https://github.com/voult-dev/voult-sdk/tree/main/packages/create-voult-app#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

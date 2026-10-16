@@ -1,0 +1,19 @@
+name: templates
+# Every template, as a user would get it: pack all packages, scaffold with the packed
+# create-voult-app, install from the tarballs, build, boot against the SDK's fake Voult,
+# and sign in → /session → sign out through the app's own server (scripts/template-smoke.mjs).
+on: [push, pull_request]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [express-react, nextjs, minimal]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: node scripts/template-smoke.mjs ${{ matrix.template }}

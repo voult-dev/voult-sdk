@@ -31,6 +31,7 @@ async function hasSessionCookie(request, secret) {
  *   export default voultMiddleware({ publicPaths: ['/', '/login'], signInPath: '/login' });
  *   export const config = { matcher: ['/((?!_next/|favicon.ico|.*\\..*).*)'] };
  *
+ * Only pages are redirected; `/api/*` passes through so route handlers answer 401 JSON themselves.
  * A UX guard, not the authority: it only checks that a correctly signed session cookie exists,
  * so it can't see a revoked session. Pages that need certainty call `requireSession()`.
  * It also records the request path for `requireSession()`'s `returnTo`.
@@ -43,8 +44,12 @@ export function voultMiddleware({ publicPaths = ['/'], signInPath = '/login', ba
     requestHeaders.set('x-voult-path', `${pathname}${search}`);
     const next = () => NextResponse.next({ request: { headers: requestHeaders } });
 
+    // Pages only: an API request redirected to the sign-in page would hand fetch() HTML instead of
+    // the route's 401 JSON. API routes check the session themselves (getSession()).
     if (
       pathname.startsWith('/_next/')
+      || pathname === '/api'
+      || pathname.startsWith('/api/')
       || matches(pathname, [signInPath, basePath, `${basePath}/*`, ...publicPaths])
     ) {
       return next();

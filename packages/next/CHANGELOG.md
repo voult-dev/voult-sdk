@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/next` are documented here.
 
+## 0.1.2
+
+- **Fix: `voultMiddleware` redirected API requests to the sign-in page.** A signed-out `fetch('/api/…')` got the login page's HTML (via a redirect) instead of the route's 401 JSON. `/api/*` now passes through; route handlers check `getSession()` themselves. Found by the `create-voult-app` template smoke test.
+
 ## 0.1.1
 
 - **Fix: after a server action renewed the session, the page re-rendered as if it hadn't.** `getSession()` read the raw `Cookie` request header, which doesn't include cookies a server action sets; Next re-renders the page in the same request, so the layout saw the expired token and `requireSession()` redirected away. It now reads `cookies()`, which does. Found by the end-to-end suite (`voult-next-e2e`).

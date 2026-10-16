@@ -4,7 +4,7 @@ import { runDoctor } from './doctor.js';
 const HELP = `voult — scaffold Voult auth config for a server app
 
 Usage:
-  voult init [--force]
+  voult init [--force] [--yes --client-id <id> --client-secret <secret>] [--strategy cookie|bearer] [--base-url <url>] [--quiet]
   voult doctor [--json] [--callback-url <url>]
 
 Commands:
@@ -13,6 +13,8 @@ Commands:
 
 Options:
   --force   Overwrite an existing .env (init)
+  --yes     No prompts: use the flags (init). The secret can come from VOULT_CLIENT_SECRET instead of --client-secret
+  --quiet   Only report what was written (init)
   --json    Machine-readable output; exit code 1 if any check fails (doctor)
   -h, --help   Show this help (or: voult doctor --help)
 `;

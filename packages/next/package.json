@@ -1,6 +1,6 @@
 {
   "name": "@voult/next",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Voult authentication for Next.js App Router: one catch-all route, getSession() for Server Components, and an Edge middleware guard",
   "type": "module",
   "main": "./src/index.js",

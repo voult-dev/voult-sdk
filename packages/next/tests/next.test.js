@@ -182,7 +182,7 @@ describe('voultMiddleware (C5)', () => {
     expect(res.headers.get('location')).toBe('http://app.test/login?returnTo=%2Faccount');
   });
 
-  it.each(['/', '/blog', '/blog/post-1', '/login', '/api/auth/session', '/_next/static/x.js'])('%s is public', async (path) => {
+  it.each(['/', '/blog', '/blog/post-1', '/login', '/api/auth/session', '/api/orders', '/_next/static/x.js'])('%s passes through', async (path) => {
     expect(passed(await run(path))).toBe(true);
   });
 

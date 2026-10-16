@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Voult app</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 34rem; margin: 3rem auto; padding: 0 1rem; }
+    form { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+    input { padding: .45rem .6rem; font: inherit; border: 1px solid #8886; border-radius: .4rem; background: transparent; color: inherit; }
+    a.button, button { display: inline-block; padding: .45rem .9rem; border: 1px solid #8886; border-radius: .4rem; background: transparent; color: inherit; text-decoration: none; cursor: pointer; font: inherit; }
+    .error { color: #d33; }
+  </style>
+</head>
+<body>
+  <h1>My Voult app</h1>
+  <p id="status">Loading…</p>
+  <p id="error" class="error" hidden></p>
+
+  <div id="signin" hidden>
+    <form id="password">
+      <input name="email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" required>
+      <input name="password" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+      <button name="action" value="email-login">Sign in</button>
+      <button name="action" value="register">Create account</button>
+    </form>
+    <div id="providers"></div>
+  </div>
+
+  <form id="mfa" hidden>
+    <input name="code" placeholder="6-digit code" aria-label="Authenticator code" autocomplete="one-time-code" inputmode="numeric" required>
+    <button>Verify</button>
+  </form>
+
+  <button id="signout" hidden>Sign out</button>
+
+  <script type="module">
+    // The browser only ever talks to /api/auth on this server: no secrets or tokens in JS.
+    const api = (path, body) => fetch('/api/auth' + path, {
+      method: body ? 'POST' : 'GET',
+      credentials: 'include',
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(async (r) => ({ ok: r.ok, body: await r.json().catch(() => ({})) }));
+    const $ = (id) => document.getElementById(id);
+    const fail = (text) => { $('error').hidden = false; $('error').textContent = text; };
+    const labels = { google: 'Google', github: 'GitHub', facebook: 'Facebook', linkedin: 'LinkedIn', microsoft: 'Microsoft', apple: 'Apple' };
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('voult_error')) fail('Sign-in failed: ' + (params.get('voult_error_description') || params.get('voult_error')));
+
+    const { body: session } = await api('/session');
+    if (session.authenticated) {
+      $('status').textContent = 'Signed in as ' + (session.user?.email ?? 'you');
+      $('signout').hidden = false;
+    } else if (session.mfaPending) {
+      $('status').textContent = 'Enter the code from your authenticator app.';
+      $('mfa').hidden = false;
+    } else {
+      $('status').textContent = 'You are signed out.';
+      $('signin').hidden = false;
+      const { body } = await api('/oauth/providers');
+      $('providers').innerHTML = Object.entries(body.providers ?? {}).filter(([, on]) => on)
+        .map(([p]) => '<a class="button" href="/api/auth/oauth/' + p + '/start">Continue with ' + (labels[p] ?? p) + '</a> ').join('');
+    }
+
+    $('password').onsubmit = async (e) => {
+      e.preventDefault();
+      const { email, password } = Object.fromEntries(new FormData(e.target));
+      const action = e.submitter?.value ?? 'email-login';
+      const r = await api('/' + action, action === 'register' ? { email, password, fullName: email.split('@')[0] } : { email, password });
+      if (r.ok) location.replace('/'); else fail(r.body.error?.message ?? 'Sign-in failed');
+    };
+    $('mfa').onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await api('/mfa/verify', { mfaToken: e.target.code.value });
+      if (r.ok) location.replace('/'); else fail(r.body.error?.message ?? 'Invalid code');
+    };
+    $('signout').onclick = async () => { await api('/logout', {}); location.replace('/'); };
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useVoult } from '@voult/react';
-import { useAction } from '../lib.jsx';
+import { useAction } from '../../lib.jsx';
 
 export default function MfaSettings() {
   const { mfa } = useVoult();

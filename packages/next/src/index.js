@@ -36,8 +36,7 @@ export function createVoultRouteHandlers({ basePath = DEFAULT_BASE_PATH, ...opti
     try {
       handle ??= createVoultHandler(resolveConfig(options));
     } catch (err) {
-      console.error(err);
-      const payload = normalizeVoultError(err);
+      const payload = normalizeVoultError(err, { context: 'config' }); // logs the setup message on the server
       return Response.json(payload, { status: payload.error.status });
     }
     return handle(request, { basePath });

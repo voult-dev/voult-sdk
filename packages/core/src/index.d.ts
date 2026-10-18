@@ -68,7 +68,12 @@ export type VoultHandler = (request: Request, options?: HandleOptions) => Promis
 export function createVoultHandler(config: VoultConfig): VoultHandler;
 export function loadConfigFromEnv(options?: LoadConfigFromEnvOptions): VoultConfig;
 export function resolveConfig(options?: ResolveConfigOptions): VoultConfig;
-export function normalizeVoultError(err: unknown): { error: { code: string; message: string; status: number; field?: string; fields?: unknown } };
+export interface PublicError { code: string; message: string; status: number; field?: string; fields?: unknown }
+export interface ErrorOptions { log?: (...args: unknown[]) => void; context?: string }
+export const GENERIC_ERROR_MESSAGE: string;
+/** 4xx: message kept, code = the Voult API's (ERRORS.md). 5xx/unexpected: logged on the server, generic for the browser. */
+export function publicError(err: unknown, options?: ErrorOptions): PublicError;
+export function normalizeVoultError(err: unknown, options?: ErrorOptions): { error: PublicError };
 
 export const COOKIE_ACCESS: 'voult_access';
 export const COOKIE_REFRESH: 'voult_refresh';

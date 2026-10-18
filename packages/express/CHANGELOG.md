@@ -2,6 +2,15 @@
 
 All notable changes to `@voult/express` are documented here.
 
+## 0.4.0
+
+Runs on `@voult/core` 0.3.0:
+
+- **Breaking: error `code`s are the Voult API's** (`INVALID_CREDENTIALS`, `USER_EXISTS`, …, see ERRORS.md) instead of the SDK's categories. Branching on `status` is unaffected.
+- Internal errors (5xx, network, bugs) are logged on the server with the method and path, and the browser gets a generic message instead of the raw error.
+- Passkeys work on your own domain with Voult API 1.4 (the router sends the page origin).
+- Needs `@voult/sdk` 0.2.2.
+
 ## 0.3.0
 
 **Every end-user feature is now a router route**, so your server is just the mount lines: MFA setup/enable/disable/backup codes/cancel, sessions (list with `isCurrent`, revoke), linked accounts (list, unlink), account deletion, passkeys (register, list, rename, delete, sign in) and magic links (send, verify). The full list and the request bodies are in [`@voult/core`'s 0.2.0 notes](../core/CHANGELOG.md) and the quick start's route reference. If you wrote these routes yourself (e.g. `/api/mfa/setup` outside the router), you can delete them; if you mounted your own handlers at the **same** paths under the router, the router's now answer first.

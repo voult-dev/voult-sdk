@@ -11,15 +11,15 @@
   },
   "dependencies": {
     "@simplewebauthn/browser": "^14.0.0",
-    "@voult/next": "^0.1.2",
+    "@voult/next": "^0.2.0",
     "@voult/react": "^0.2.0",
-    "@voult/sdk": "^0.2.1",
+    "@voult/sdk": "^0.2.2",
     "next": "^16.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@voult/cli": "^0.2.4"
+    "@voult/cli": "^0.2.5"
   },
   "engines": {
     "node": ">=20.12"

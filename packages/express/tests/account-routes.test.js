@@ -144,6 +144,8 @@ describe('passkeys', () => {
     const agent = await signedIn();
     const options = await agent.post('/api/auth/passkeys/register/options').send({ deviceName: 'MacBook' });
     expect(options.body.options).toEqual({ challenge: 'abc' });
+    // The page's origin goes along, so Voult can pick the passkey domain (API 1.4).
+    expect(lastCall('/api/auth/webauthn/register/options').body.origin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
 
     const verified = await agent.post('/api/auth/passkeys/register/verify').send({ credential: { id: 'c' }, deviceName: 'MacBook' });
     expect(verified.body.credential).toMatchObject({ id: 'cred-1', deviceName: 'MacBook' });
@@ -158,9 +160,11 @@ describe('passkeys', () => {
     const agent = request.agent(await mount());
     const options = await agent.post('/api/auth/passkeys/login/options').send({});
     expect(options.body.options).toEqual({ challenge: 'xyz' });
+    expect(lastCall('/api/auth/webauthn/login/options').body.origin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
 
-    const login = await agent.post('/api/auth/passkeys/login/verify').send({ credential: { id: 'c' } });
+    const login = await agent.post('/api/auth/passkeys/login/verify').set('Origin', 'https://shop.example').send({ credential: { id: 'c' } });
     expect(login.status).toBe(200);
+    expect(lastCall('/api/auth/webauthn/login/verify').body.origin).toBe('https://shop.example'); // the browser's Origin wins
     expect(login.body.accessToken).toBeUndefined();
     expect(login.headers['set-cookie'].join(';')).toMatch(/voult_access=.*HttpOnly/);
     expect((await agent.get('/api/auth/session')).body.authenticated).toBe(true);

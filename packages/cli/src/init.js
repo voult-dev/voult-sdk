@@ -113,7 +113,8 @@ export async function runInit(argv, io = {}) {
     ...(typeof flags['base-url'] === 'string' && flags['base-url'] && { VOULT_BASE_URL: flags['base-url'] }),
     VOULT_CLIENT_ID: clientId,
     VOULT_CLIENT_SECRET: clientSecret,
-    VOULT_SESSION_STRATEGY: strategy,
+    // Only when it differs from the default (cookie): a starter .env holds only what matters.
+    ...(strategy === 'bearer' && { VOULT_SESSION_STRATEGY: strategy }),
   };
 
   if (strategy === 'cookie') {

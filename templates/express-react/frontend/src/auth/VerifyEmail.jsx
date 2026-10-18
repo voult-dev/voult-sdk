@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { query, request } from '../lib.jsx';
+import { query, request, userMessage } from '../lib.jsx';
 
 // Opened from the verification email: /verify-email?token=…&appId=…
 export default function VerifyEmail() {
@@ -8,7 +8,7 @@ export default function VerifyEmail() {
     const params = new URLSearchParams({ token: query('token') ?? '', appId: query('appId') ?? '' });
     request(`/user/verify-email?${params}`)
       .then(() => setState({ ok: true, text: 'Email verified. You can sign in now.' }))
-      .catch((err) => setState({ ok: false, text: err.message }));
+      .catch((err) => setState({ ok: false, text: userMessage(err) }));
   }, []);
   return (
     <>

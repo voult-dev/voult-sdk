@@ -2,7 +2,7 @@
 // Apps install an adapter, not this package.
 export { createVoultHandler } from './handler.js';
 export { loadConfigFromEnv, resolveConfig } from './config.js';
-export { normalizeVoultError } from './errors.js';
+export { GENERIC_ERROR_MESSAGE, normalizeVoultError, publicError } from './errors.js';
 export { safeReturnTo } from './oauth.js';
 export {
   COOKIE_ACCESS,

@@ -52,7 +52,7 @@ test('writes .env with prompted values and a generated session secret for the co
   assert.match(env, /VOULT_CLIENT_ID=app_123/);
   assert.match(env, /VOULT_CLIENT_SECRET=shh-secret/);
   assert.match(env, /VOULT_SESSION_SECRET=[0-9a-f]{64}/);
-  assert.match(env, /^VOULT_SESSION_STRATEGY=cookie$/m);
+  assert.doesNotMatch(env, /VOULT_SESSION_STRATEGY/); // cookie is the default: not written
 
   const example = fs.readFileSync(path.join(cwd, '.env.example'), 'utf8');
   assert.doesNotMatch(example, /shh-secret/);
@@ -70,9 +70,9 @@ test('does not prompt for or write VOULT_BASE_URL — @voult/express defaults it
   assert.doesNotMatch(env, /VOULT_BASE_URL/);
   assert.ok(logs.some((line) => line.includes('VOULT_BASE_URL was not written')));
 
-  // .env.example still lists it as an available (optional) override.
+  // .env.example still lists it as an available (optional) override, commented out.
   const example = fs.readFileSync(path.join(cwd, '.env.example'), 'utf8');
-  assert.match(example, /^VOULT_BASE_URL=$/m);
+  assert.match(example, /^# VOULT_BASE_URL=$/m);
 });
 
 test('bearer strategy skips generating a session secret', async () => {

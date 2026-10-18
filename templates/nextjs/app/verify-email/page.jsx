@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { request } from '../auth-request';
+import { request, userMessage } from '../auth-request';
 
 // Opened from the verification email: /verify-email?token=…&appId=…
 export default function VerifyEmail() {
@@ -11,7 +11,7 @@ export default function VerifyEmail() {
     const query = new URLSearchParams({ token: params.get('token') ?? '', appId: params.get('appId') ?? '' });
     request(`/user/verify-email?${query}`)
       .then(() => setState({ ok: true, text: 'Email verified. You can sign in now.' }))
-      .catch((err) => setState({ ok: false, text: err.message }));
+      .catch((err) => setState({ ok: false, text: userMessage(err) }));
   }, [params]);
   return (
     <main>

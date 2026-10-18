@@ -2,6 +2,15 @@
 
 All notable changes to `@voult/next` are documented here.
 
+## 0.2.0
+
+Runs on `@voult/core` 0.3.0:
+
+- **Breaking: error `code`s are the Voult API's** (`INVALID_CREDENTIALS`, `USER_EXISTS`, …) instead of the SDK's categories.
+- Internal errors are logged on the server and answered with a generic message. A missing config (e.g. `VOULT_CLIENT_ID`) is logged on the server instead of being shown to the browser.
+- Passkeys work on your own domain with Voult API 1.4.
+- Needs `@voult/sdk` 0.2.2.
+
 ## 0.1.2
 
 - **Fix: `voultMiddleware` redirected API requests to the sign-in page.** A signed-out `fetch('/api/…')` got the login page's HTML (via a redirect) instead of the route's 401 JSON. `/api/*` now passes through; route handlers check `getSession()` themselves. Found by the `create-voult-app` template smoke test.

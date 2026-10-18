@@ -4,7 +4,7 @@
  * @see https://github.com/voult-dev/voult
  */
 
-export const VERSION = '0.2.1';
+export const VERSION = '0.2.2';
 
 export { VoultClient } from './client.js';
 export { DEFAULT_BASE_URL, ENDPOINTS, OAUTH_PROVIDERS, OAUTH_INTENTS, OAUTH_STATE_MAX_LENGTH } from './constants.js';

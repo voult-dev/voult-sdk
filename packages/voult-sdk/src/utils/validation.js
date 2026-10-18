@@ -5,10 +5,12 @@
 import { ValidationError } from '../errors.js';
 
 /**
- * Password validation regex
- * Requirements: Min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character
+ * Password rule (Voult API 1.4+, NIST SP 800-63B): 8 to 128 characters, any characters, no
+ * composition rules. The API also refuses commonly used passwords; that list stays server-side
+ * (it would bloat browser bundles), so the server's WEAK_PASSWORD message says when it applies.
  */
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 
 /**
  * Email validation regex
@@ -23,8 +25,7 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 /**
  * Password requirements message
  */
-export const PASSWORD_REQUIREMENTS_MESSAGE = 
-  'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character from @$!%*?& (only letters, numbers, and @$!%*?& are allowed)';
+export const PASSWORD_REQUIREMENTS_MESSAGE = 'Password must be 8 to 128 characters. Any characters work, including spaces.';
 
 /**
  * Validates an email address format
@@ -47,7 +48,8 @@ export function isValidPassword(password) {
   if (!password || typeof password !== 'string') {
     return false;
   }
-  return PASSWORD_REGEX.test(password);
+  const length = [...password].length; // characters, not UTF-16 units
+  return length >= PASSWORD_MIN_LENGTH && length <= PASSWORD_MAX_LENGTH;
 }
 
 /**

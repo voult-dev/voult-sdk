@@ -9,12 +9,12 @@
     "doctor": "voult doctor --callback-url http://localhost:3000/api/auth/oauth/callback"
   },
   "dependencies": {
-    "@voult/express": "^0.3.0",
-    "@voult/sdk": "^0.2.1",
+    "@voult/express": "^0.4.0",
+    "@voult/sdk": "^0.2.2",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "@voult/cli": "^0.2.4"
+    "@voult/cli": "^0.2.5"
   },
   "engines": {
     "node": ">=20.12"

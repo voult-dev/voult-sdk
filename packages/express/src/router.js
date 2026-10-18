@@ -35,7 +35,7 @@ export function createVoultRouter(options = {}) {
         next(err);
         return;
       }
-      const payload = normalizeVoultError(err);
+      const payload = normalizeVoultError(err, { context: `${req.method} ${req.originalUrl}` });
       res.status(payload.error.status).json(payload);
     }
   });

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { request } from '../auth-request';
+import { request, userMessage } from '../auth-request';
 
 export default function ForgotPassword() {
   const [message, setMessage] = useState(null);
@@ -13,7 +13,7 @@ export default function ForgotPassword() {
         try {
           const data = await request('/user/forgot-password', { method: 'POST', body: { email } });
           setMessage({ ok: true, text: data.message ?? 'Check your email.' });
-        } catch (err) { setMessage({ ok: false, text: err.message }); }
+        } catch (err) { setMessage({ ok: false, text: userMessage(err) }); }
       }}>
         <input name="email" type="email" aria-label="Email" placeholder="Email" required />
         <button>Email me a reset link</button>

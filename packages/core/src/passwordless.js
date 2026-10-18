@@ -9,7 +9,7 @@ import {
   verifyPasskeyLogin,
   verifyPasskeyRegistration,
 } from '@voult/sdk';
-import { appLocation, errorCode, oauthCallbackUrl, redirectWithError, safeReturnTo } from './oauth.js';
+import { appLocation, oauthCallbackUrl, redirectWithFailure, safeReturnTo } from './oauth.js';
 import { authResult, authenticated, json, redirect } from './routes.js';
 import { COOKIE_MFA_PENDING, MFA_PENDING_MAX_AGE_MS, setCookie } from './session.js';
 
@@ -38,13 +38,21 @@ function magicLinkUrl(ctx) {
   return url;
 }
 
+/**
+ * The page running the passkey ceremony: the browser's Origin header, else this request's own
+ * origin (same-origin setups). Voult picks the passkey domain (RP ID) from it, among the app's
+ * allowlisted origins.
+ * @param {Context} ctx
+ */
+const pageOrigin = (ctx) => ctx.request.headers.get('origin') ?? `${ctx.url.protocol}//${ctx.url.host}`;
+
 /** @type {Route[]} */
 export const passwordlessRoutes = [
   ['POST', '/passkeys/register/options', authenticated(async (ctx) => (
-    json(await createPasskeyRegistrationOptions({ deviceName: ctx.body.deviceName }, ctx.client))
+    json(await createPasskeyRegistrationOptions({ deviceName: ctx.body.deviceName, origin: pageOrigin(ctx) }, ctx.client))
   ))],
   ['POST', '/passkeys/register/verify', authenticated(async (ctx) => (
-    json(await verifyPasskeyRegistration(ctx.body.credential, { deviceName: ctx.body.deviceName }, ctx.client))
+    json(await verifyPasskeyRegistration(ctx.body.credential, { deviceName: ctx.body.deviceName, origin: pageOrigin(ctx) }, ctx.client))
   ))],
   ['GET', '/passkeys', authenticated(async (ctx) => json(await listPasskeys(ctx.client)))],
   ['PATCH', '/passkeys/:id', authenticated(async (ctx) => (
@@ -54,9 +62,9 @@ export const passwordlessRoutes = [
 
   // Public: sign in with a passkey. Sets the session (or the MFA-pending cookie) like password sign-in.
   ['POST', '/passkeys/login/options', async (ctx) => (
-    json(await createPasskeyLoginOptions(ctx.body.email ? { email: ctx.body.email } : {}, ctx.client))
+    json(await createPasskeyLoginOptions({ ...(ctx.body.email && { email: ctx.body.email }), origin: pageOrigin(ctx) }, ctx.client))
   )],
-  ['POST', '/passkeys/login/verify', async (ctx) => authResult(ctx, await verifyPasskeyLogin(ctx.body.credential, ctx.client))],
+  ['POST', '/passkeys/login/verify', async (ctx) => authResult(ctx, await verifyPasskeyLogin(ctx.body.credential, { origin: pageOrigin(ctx) }, ctx.client))],
 
   // Public. Answers the same whether or not the email has an account, so it can't be used to
   // find out who signed up. Mistakes in the request or the app's setup still come back as errors.
@@ -80,7 +88,7 @@ export const passwordlessRoutes = [
     try {
       result = await verifyEmailLink(ctx.query('token'), ctx.client);
     } catch (err) {
-      return redirectWithError(config, errorCode(err), err.message);
+      return redirectWithFailure(config, err, 'magic link');
     }
 
     if (result.mfaRequired) {

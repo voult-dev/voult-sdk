@@ -21,6 +21,9 @@ test('validates email, password, username, url, and token formats', () => {
   assert.equal(isValidEmail(null), false);
 
   assert.equal(isValidPassword('StrongPass123!'), true);
+  assert.equal(isValidPassword('MyPass#2026'), true); // refused by the pre-0.2.2 rule (#)
+  assert.equal(isValidPassword('correct horse battery staple'), true);
+  assert.equal(isValidPassword('x'.repeat(129)), false);
   assert.equal(isValidPassword('weak'), false);
   assert.equal(isValidPassword(null), false);
 
@@ -31,7 +34,7 @@ test('validates email, password, username, url, and token formats', () => {
   assert.equal(isValidUrl('https://example.com/callback'), true);
   assert.equal(isValidUrl('not-a-url'), false);
 
-  assert.equal(PASSWORD_REQUIREMENTS_MESSAGE, 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character from @$!%*?& (only letters, numbers, and @$!%*?& are allowed)');
+  assert.equal(PASSWORD_REQUIREMENTS_MESSAGE, 'Password must be 8 to 128 characters. Any characters work, including spaces.');
 });
 
 test('validate helpers throw ValidationError for invalid input', () => {

@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/core` are documented here.
 
+## 0.3.0
+
+- **Breaking: error codes are the Voult API's.** A failed request now answers with the API's catalog code (`INVALID_CREDENTIALS`, `USER_EXISTS`, `WEAK_PASSWORD`, see ERRORS.md) instead of the SDK's category (`AUTHENTICATION_ERROR`, `CONFLICT_ERROR`, `VALIDATION_ERROR`). Errors raised by the router itself keep their codes (`AUTHENTICATION_ERROR` for "Authentication required", `INVALID_JSON`, `PAYLOAD_TOO_LARGE`). If you branch on `code`, switch to the catalog codes; branching on `status` is unaffected.
+- **Internal errors stay on the server.** 5xx, network failures and unexpected errors are logged in full (`console.error`, with the method and path) and reach the browser only as `{ code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' }`. 4xx messages (things the user can fix) are unchanged. The same applies to `?voult_error=` on the OAuth and magic-link error pages. New exports `publicError(err, { log, context })` and `GENERIC_ERROR_MESSAGE`.
+- Passkey routes send the page's origin (the browser's `Origin` header, else the request's own origin) so Voult API 1.4 can use the right passkey domain. Needs `@voult/sdk` 0.2.2.
+
 ## 0.2.1
 
 - New route `GET /session/renew?returnTo=/path`: renews the session from the refresh cookie, saves the new cookies and redirects back (or to `errorPath?voult_error=SESSION_EXPIRED`). For pages rendered where cookies can't be written, such as Next.js Server Components: renewing there would rotate the refresh token without saving it, and Voult's reuse detection would then end the session.

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PASSWORD_REQUIREMENTS_MESSAGE } from '@voult/react';
-import { request } from '../auth-request';
+import { request, userMessage } from '../auth-request';
 
 // Opened from the reset email: /reset-password?token=…&appId=…
 export default function ResetPassword() {
@@ -17,7 +17,7 @@ export default function ResetPassword() {
         try {
           await request('/user/reset-password', { method: 'POST', body: { token: params.get('token'), appId: params.get('appId'), newPassword } });
           setMessage({ ok: true, text: 'Password changed. You can sign in now.' });
-        } catch (err) { setMessage({ ok: false, text: err.message }); }
+        } catch (err) { setMessage({ ok: false, text: userMessage(err) }); }
       }}>
         <input name="newPassword" type="password" aria-label="New password" placeholder="New password" autoComplete="new-password" required />
         <button>Save</button>

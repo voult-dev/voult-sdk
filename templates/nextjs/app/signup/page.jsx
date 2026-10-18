@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PASSWORD_REQUIREMENTS_MESSAGE, useVoult } from '@voult/react';
+import { userMessage } from '../auth-request';
 
 export default function SignUp() {
   const { signUp } = useVoult();
@@ -14,7 +15,7 @@ export default function SignUp() {
         try {
           await signUp(Object.fromEntries(new FormData(event.currentTarget)));
           window.location.assign('/account'); // full navigation: see sign-in.jsx
-        } catch (err) { setError(`${err.code}: ${err.message}`); }
+        } catch (err) { setError(userMessage(err)); }
       }}>
         <input name="fullName" aria-label="Full name" placeholder="Full name" required />
         <input name="email" type="email" aria-label="Email" placeholder="Email" required />

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { OAuthButton, getOAuthRedirectResult, useVoult } from '@voult/react';
+import { userMessage } from '../auth-request';
 
 function useAction() {
   const [message, setMessage] = useState(null);
@@ -13,7 +14,7 @@ function useAction() {
       const text = await fn(form);
       if (text) setMessage({ ok: true, text });
     } catch (err) {
-      setMessage({ ok: false, text: `${err.code ?? 'ERROR'}: ${err.message}` });
+      setMessage({ ok: false, text: userMessage(err) });
     }
   };
   const note = message && <p role={message.ok ? 'status' : 'alert'} className={message.ok ? 'ok' : 'err'}>{message.text}</p>;

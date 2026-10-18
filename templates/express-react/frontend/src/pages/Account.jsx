@@ -1,10 +1,10 @@
 import { useSession } from '@voult/react';
 import { go } from '../lib.jsx';
-import Danger from '../account/Danger.jsx';
-import LinkedAccounts from '../account/LinkedAccounts.jsx';
-import MfaSettings from '../account/MfaSettings.jsx';
-import Passkeys from '../account/Passkeys.jsx';
-import Sessions from '../account/Sessions.jsx';
+import Danger from '../auth/account/Danger.jsx';
+import LinkedAccounts from '../auth/account/LinkedAccounts.jsx';
+import MfaSettings from '../auth/account/MfaSettings.jsx';
+import Passkeys from '../auth/account/Passkeys.jsx';
+import Sessions from '../auth/account/Sessions.jsx';
 
 export default function Account() {
   const { status, user } = useSession();

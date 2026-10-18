@@ -5,6 +5,7 @@ import {
   linkOAuthProvider,
 } from '@voult/sdk';
 import { base64 } from './cookies.js';
+import { publicError } from './errors.js';
 import { json, redirect } from './routes.js';
 import {
   COOKIE_MFA_PENDING,
@@ -76,8 +77,10 @@ export function redirectWithError(config, code, description) {
   }));
 }
 
-export function errorCode(err) {
-  return err?.apiCode || err?.code || 'OAUTH_FAILED';
+/** A failed step as `?voult_error=<code>&voult_error_description=<message>` (publicError rules). */
+export function redirectWithFailure(config, err, context) {
+  const { code, message } = publicError(err, { context });
+  return redirectWithError(config, code, message);
 }
 
 function newNonce() {
@@ -155,7 +158,7 @@ export function oauthRoutes() {
           ? await linkOAuthProvider(provider, { redirectUri, state: nonce }, client)
           : await getOAuthAuthorizationUrl(provider, { intent, redirectUri, state: nonce }, client));
       } catch (err) {
-        return redirectWithError(config, errorCode(err), err.message);
+        return redirectWithFailure(config, err, 'OAuth');
       }
 
       // Ties the callback to this browser: Voult echoes `state`, we compare it to this cookie.
@@ -197,7 +200,7 @@ export function oauthRoutes() {
       try {
         result = await exchangeOAuthCode(voultCode, { redirectUri: saved.redirectUri }, client);
       } catch (err) {
-        return redirectWithError(config, errorCode(err), err.message);
+        return redirectWithFailure(config, err, 'OAuth');
       }
 
       if (result.mfaRequired) {

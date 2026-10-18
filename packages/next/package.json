@@ -1,6 +1,6 @@
 {
   "name": "@voult/next",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Voult authentication for Next.js App Router: one catch-all route, getSession() for Server Components, and an Edge middleware guard",
   "type": "module",
   "main": "./src/index.js",
@@ -39,10 +39,10 @@
   "peerDependencies": {
     "next": ">=14.2",
     "react": ">=18",
-    "@voult/sdk": ">=0.2.1"
+    "@voult/sdk": ">=0.2.2"
   },
   "dependencies": {
-    "@voult/core": "^0.2.1"
+    "@voult/core": "^0.3.0"
   },
   "devDependencies": {
     "@voult/sdk": "*",

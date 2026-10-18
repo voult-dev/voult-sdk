@@ -2,6 +2,10 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.2.5
+
+- **Leaner env files.** `voult init` writes only what the app needs: `VOULT_CLIENT_ID`, `VOULT_CLIENT_SECRET`, `VOULT_SESSION_SECRET` (plus `VOULT_BASE_URL` / `VOULT_SESSION_STRATEGY` when given a non-default value; `cookie` is no longer written). `.env.example` lists the 3 required keys, then the optional ones commented out, each explained on the line above.
+
 ## 0.2.4
 
 - **`voult init --yes`**: no prompts, for scripts, CI and `create-voult-app`. Pass `--client-id` and `--client-secret`, or put the secret in `VOULT_CLIENT_SECRET` so it stays out of shell history. Fails without writing anything if either is missing. The secret is never printed.

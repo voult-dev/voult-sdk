@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { OAuthButton, useOAuthProviders, useSession, useVoult } from '@voult/react';
+import { userMessage } from './auth-request';
 
 export default function SignIn({ returnTo = '/account' }) {
   const { status } = useSession();
@@ -19,7 +20,7 @@ export default function SignIn({ returnTo = '/account' }) {
       const text = await fn(form);
       if (text) setMessage({ ok: true, text });
     } catch (err) {
-      setMessage({ ok: false, text: `${err.code ?? 'ERROR'}: ${err.message}` });
+      setMessage({ ok: false, text: userMessage(err) });
     }
   };
   const note = message && <p role={message.ok ? 'status' : 'alert'} className={message.ok ? 'ok' : 'err'}>{message.text}</p>;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useVoult } from '@voult/react';
-import { go, useAction } from '../lib.jsx';
+import { go, useAction } from '../../lib.jsx';
 
 export default function Sessions() {
   const { sessions } = useVoult();

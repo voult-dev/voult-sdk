@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- `express-react` is organised as `backend/` (`server.js`, `auth.js` with the auth routes, `api.js` for your own routes) and `frontend/` (`src/pages/` for your app, `src/auth/` for the auth UI). Still one package: one install, one `npm run dev`, one origin.
+- All templates show users only errors they can fix; anything else is logged and shown as "Something went wrong" (the real error also appears while `npm run dev` runs). Passkey failures in the browser get plain words.
+- `.env.example` lists the 3 required keys, with the optional ones commented out.
+- Pins `@voult/express` 0.4, `@voult/next` 0.2, `@voult/sdk` 0.2.2, `@voult/cli` 0.2.5.
+
 ## 0.1.0
 
 First release.

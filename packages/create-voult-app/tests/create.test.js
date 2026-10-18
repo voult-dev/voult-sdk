@@ -49,9 +49,12 @@ for (const template of Object.keys(TEMPLATES)) {
 }
 
 test('the templates have no auth route handlers of their own (the router serves them)', () => {
-  const server = fs.readFileSync(path.join(templatesDir(), 'express-react', 'server.js'), 'utf8');
-  assert.equal((server.match(/app\.(get|post|put|patch|delete)\(/g) ?? []).length, 2, 'only /api/me and the SPA fallback');
-  assert.match(server, /app\.use\('\/api\/auth', createVoultRouter\(\)\)/);
+  const backend = path.join(templatesDir(), 'express-react', 'backend');
+  const auth = fs.readFileSync(path.join(backend, 'auth.js'), 'utf8');
+  assert.match(auth, /app\.use\('\/api\/auth', createVoultRouter\(\)\)/);
+  const api = fs.readFileSync(path.join(backend, 'api.js'), 'utf8');
+  assert.equal((api.match(/api\.(get|post|put|patch|delete)\(/g) ?? []).length, 1, 'only the /api/me example');
+  assert.ok(fs.existsSync(path.join(templatesDir(), 'express-react', 'frontend', 'src', 'auth', 'SignIn.jsx')));
   const nextRoutes = fs.readdirSync(path.join(templatesDir(), 'nextjs', 'app', 'api'));
   assert.deepEqual(nextRoutes.sort(), ['auth', 'me']);
 });

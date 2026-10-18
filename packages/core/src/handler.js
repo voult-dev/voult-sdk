@@ -144,7 +144,7 @@ export function createVoultHandler(config) {
       };
       result = await found.handler(ctx);
     } catch (err) {
-      const payload = normalizeVoultError(err);
+      const payload = normalizeVoultError(err, { context: `${request.method} ${url.pathname}` });
       result = json(payload, payload.error.status);
     }
 

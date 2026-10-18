@@ -248,7 +248,8 @@ describe('package boundaries', () => {
   it('re-exports the password rules', () => {
     expect(isValidPassword('Str0ng!Pass')).toBe(true);
     expect(isValidPassword('weak')).toBe(false);
-    expect(PASSWORD_REQUIREMENTS_MESSAGE).toMatch(/@\$!%\*\?&/);
+    expect(isValidPassword('MyPass#2026')).toBe(true);
+    expect(PASSWORD_REQUIREMENTS_MESSAGE).toMatch(/8 to 128 characters/);
   });
 
   it('source imports only react, local files and @voult/sdk/validation (no HTTP client in the bundle)', () => {

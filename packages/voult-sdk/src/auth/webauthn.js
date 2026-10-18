@@ -27,6 +27,7 @@ export async function getWebAuthnCompatibility(client) {
  * Begin passkey registration for the authenticated user.
  * @param {Object} [options]
  * @param {string} [options.deviceName]
+ * @param {string} [options.origin] - The page running the ceremony (e.g. https://myapp.com); Voult uses it to pick the passkey domain when the app allows several
  * @param {import('../client.js').VoultClient} client
  */
 export async function createPasskeyRegistrationOptions(options = {}, client) {
@@ -38,7 +39,7 @@ export async function createPasskeyRegistrationOptions(options = {}, client) {
 
   const response = await client.post(
     ENDPOINTS.WEBAUTHN_REGISTER_OPTIONS,
-    { deviceName: options.deviceName },
+    { deviceName: options.deviceName, ...(options.origin && { origin: options.origin }) },
     { requireAuth: true }
   );
 
@@ -54,6 +55,7 @@ export async function createPasskeyRegistrationOptions(options = {}, client) {
  * @param {Object} credential - WebAuthn registration credential from the browser
  * @param {Object} [options]
  * @param {string} [options.deviceName]
+ * @param {string} [options.origin] - The page running the ceremony (e.g. https://myapp.com); Voult uses it to pick the passkey domain when the app allows several
  * @param {import('../client.js').VoultClient} client
  */
 export async function verifyPasskeyRegistration(credential, options = {}, client) {
@@ -69,7 +71,7 @@ export async function verifyPasskeyRegistration(credential, options = {}, client
 
   const response = await client.post(
     ENDPOINTS.WEBAUTHN_REGISTER_VERIFY,
-    { credential, deviceName: options.deviceName },
+    { credential, deviceName: options.deviceName, ...(options.origin && { origin: options.origin }) },
     { requireAuth: true }
   );
 
@@ -83,6 +85,7 @@ export async function verifyPasskeyRegistration(credential, options = {}, client
  * Begin passkey sign-in.
  * @param {Object} [options]
  * @param {string} [options.email] - Optional email hint for discoverable credentials
+ * @param {string} [options.origin] - The page running the ceremony (e.g. https://myapp.com); Voult uses it to pick the passkey domain when the app allows several
  * @param {import('../client.js').VoultClient} client
  */
 export async function createPasskeyLoginOptions(options = {}, client) {
@@ -90,7 +93,7 @@ export async function createPasskeyLoginOptions(options = {}, client) {
   client = resolved.client;
   options = resolved.options;
 
-  const body = {};
+  const body = options.origin ? { origin: options.origin } : {};
   if (options.email) {
     body.email = validateEmail(options.email);
   }
@@ -108,12 +111,14 @@ export async function createPasskeyLoginOptions(options = {}, client) {
  * @param {Object} credential - WebAuthn authentication credential from the browser
  * @param {import('../client.js').VoultClient} client
  */
-export async function verifyPasskeyLogin(credential, client) {
+export async function verifyPasskeyLogin(credential, options = {}, client) {
+  // (credential, client) still works: the options slot is optional.
+  ({ options, client } = resolveClientArg(options, client));
   if (!credential || typeof credential !== 'object') {
     throw new ValidationError('WebAuthn credential is required', 'credential');
   }
 
-  const response = await client.post(ENDPOINTS.WEBAUTHN_LOGIN_VERIFY, { credential });
+  const response = await client.post(ENDPOINTS.WEBAUTHN_LOGIN_VERIFY, { credential, ...(options.origin && { origin: options.origin }) });
 
   return applyAuthResponse(client, response);
 }

@@ -80,11 +80,14 @@ describe('createVoultRouteHandlers (C3)', () => {
     expect((await res.json()).error.code).toBe('AUTHENTICATION_ERROR');
   });
 
-  it('missing config is a JSON 500 with the setup message, not a crash at build time', async () => {
+  it('missing config: a JSON 500 with a generic message, the setup message in the server log, no crash at build time', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { GET } = createVoultRouteHandlers({ env: {} }); // creating it reads no env
     const res = await GET(new Request('http://app.test/api/auth/session'));
     expect(res.status).toBe(500);
-    expect((await res.json()).error.message).toMatch(/VOULT_CLIENT_ID/);
+    expect((await res.json()).error).toEqual({ code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.', status: 500 });
+    expect(String(log.mock.calls[0]?.[1]?.message)).toMatch(/VOULT_CLIENT_ID/);
+    log.mockRestore();
   });
 });
 

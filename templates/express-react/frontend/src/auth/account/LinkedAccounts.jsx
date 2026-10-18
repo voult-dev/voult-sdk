@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { OAuthButton, getOAuthRedirectResult, useOAuthProviders, useVoult } from '@voult/react';
-import { useAction } from '../lib.jsx';
+import { useAction } from '../../lib.jsx';
 
 const redirect = getOAuthRedirectResult();
 

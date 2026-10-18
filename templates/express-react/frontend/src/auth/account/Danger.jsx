@@ -1,5 +1,5 @@
 import { useVoult } from '@voult/react';
-import { go } from '../lib.jsx';
+import { go } from '../../lib.jsx';
 
 export default function Danger() {
   const { signOut, deleteAccount } = useVoult();

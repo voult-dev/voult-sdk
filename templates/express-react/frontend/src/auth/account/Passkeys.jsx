@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { useVoult } from '@voult/react';
-import { useAction } from '../lib.jsx';
+import { useAction } from '../../lib.jsx';
 
 export default function Passkeys() {
   const { passkeys } = useVoult();

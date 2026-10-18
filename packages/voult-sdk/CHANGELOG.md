@@ -2,6 +2,13 @@
 
 All notable changes to `@voult/sdk` are documented here.
 
+## 0.2.2
+
+For Voult API 1.4.
+
+- **Password rule relaxed** to match the API: `isValidPassword` accepts 8 to 128 characters of any kind (spaces, Unicode, any symbol), with no composition rules. Before, only letters, digits and `@$!%*?&` were allowed, so `MyPass#2026` was refused. `PASSWORD_REQUIREMENTS_MESSAGE` says the new rule; new exports `PASSWORD_MIN_LENGTH`, `PASSWORD_MAX_LENGTH`. The API also refuses commonly used passwords (server-side only; its `WEAK_PASSWORD` message says so).
+- Passkey functions take an optional `origin` (the page running the ceremony): `createPasskeyRegistrationOptions({ deviceName, origin })`, `verifyPasskeyRegistration(credential, { deviceName, origin })`, `createPasskeyLoginOptions({ email, origin })`, and `verifyPasskeyLogin(credential, { origin }, client)` (the old `(credential, client)` call still works). Voult uses it to pick the passkey domain when an app allows several origins.
+
 ## 0.2.1
 
 - **Fix: SDK functions rejected the client in minified builds** ("Voult client instance is required"). They recognised a client by its class name (`constructor.name === 'VoultClient'`), which bundlers rename when minifying, so every call failed in Next.js production builds (`next build`, Vercel) and through `@voult/next`. A client is now recognised by a `Symbol.for('@voult/sdk.client')` brand, which survives minification and also works across two copies of the SDK. Found by the `@voult/next` end-to-end suite.

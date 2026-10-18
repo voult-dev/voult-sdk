@@ -1,6 +1,6 @@
 {
   "name": "@voult/core",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "The Voult auth router on the Fetch API (Request \u2192 Response), shared by @voult/express and @voult/next",
   "type": "module",
   "main": "./src/index.js",
@@ -37,7 +37,7 @@
   "author": "Samuel Olabode",
   "license": "MIT",
   "peerDependencies": {
-    "@voult/sdk": ">=0.2.0"
+    "@voult/sdk": ">=0.2.2"
   },
   "devDependencies": {
     "@voult/sdk": "*",

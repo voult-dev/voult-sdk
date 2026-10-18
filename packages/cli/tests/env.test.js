@@ -7,11 +7,13 @@ test('buildEnvFile writes only the keys given a value', () => {
   assert.equal(body, 'VOULT_BASE_URL=https://api.voult.dev\nVOULT_CLIENT_ID=app_1\n');
 });
 
-test('buildEnvExampleFile lists every canonical key with no value', () => {
+test('buildEnvExampleFile: the 3 required keys, the optional ones commented out, no values', () => {
   const body = buildEnvExampleFile();
-  assert.match(body, /^VOULT_BASE_URL=$/m);
-  assert.match(body, /^VOULT_CLIENT_SECRET=$/m);
-  assert.doesNotMatch(body, /=.+/); // no key has a value after '='
+  const active = body.split('\n').filter((line) => line && !line.startsWith('#'));
+  assert.deepEqual(active, ['VOULT_CLIENT_ID=', 'VOULT_CLIENT_SECRET=', 'VOULT_SESSION_SECRET=']);
+  for (const key of ['VOULT_APP_URL', 'VOULT_OAUTH_CALLBACK_URL', 'VOULT_SESSION_STRATEGY', 'VOULT_BASE_URL']) {
+    assert.match(body, new RegExp(`^# ${key}=$`, 'm'), key); // uncommenting gives an empty value, never the note
+  }
 });
 
 test('generateSessionSecret returns a 64-char hex string (32 bytes)', () => {

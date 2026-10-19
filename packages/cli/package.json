@@ -1,6 +1,6 @@
 {
   "name": "@voult/cli",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "voult init, doctor and upgrade: scaffold, check and update a Voult app",
   "type": "module",
   "bin": {

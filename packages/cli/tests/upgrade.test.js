@@ -198,3 +198,11 @@ test('never edits app code: only the package manager touches the project', async
   assert.equal(fs.readFileSync(path.join(cwd, 'server.js'), 'utf8'), 'original');
   assert.equal(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'), before, 'package.json is left to the package manager');
 });
+
+test('run from a subfolder, it upgrades the app at the nearest package.json', async () => {
+  app({ deps: { '@voult/sdk': '^0.2.1' } });
+  fs.mkdirSync(path.join(cwd, 'backend'));
+  const r = await upgrade([], { cwd: path.join(cwd, 'backend') });
+  assert.deepEqual(r.calls, [['npm', 'install', '@voult/sdk@^0.2.2']]);
+  assert.deepEqual(r.doctorCalls, [cwd]);
+});

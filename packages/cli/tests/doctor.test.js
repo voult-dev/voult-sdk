@@ -341,3 +341,17 @@ test('api-major: warns when the API major version is newer than the SDK was buil
   }
   assert.equal((await doctor(baseEnv())).byId('api-major'), undefined);
 });
+
+test('run from a subfolder (backend/), doctor checks the app root\'s .env', async () => {
+  api.app = goodApp();
+  const root = project(baseEnv());
+  fs.writeFileSync(path.join(root, 'package.json'), '{"name":"app"}');
+  fs.mkdirSync(path.join(root, 'backend'));
+  try {
+    const result = await runCli(['doctor'], { cwd: path.join(root, 'backend'), env: {}, log: () => {}, loadPackages: realPackages, envTrackedByGit: () => undefined });
+    assert.equal(result.ok, true);
+    assert.equal(result.checks.find((c) => c.id === 'env').status, 'pass');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

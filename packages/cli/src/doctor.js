@@ -44,6 +44,14 @@ export function compareVersions(a, b) {
   return 0;
 }
 
+/** The folder with the nearest package.json, like npm: `voult doctor` from backend/ checks the app. */
+export function projectRoot(cwd) {
+  for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    if (dir === path.dirname(dir)) return cwd;
+  }
+}
+
 function readDotEnv(cwd) {
   const file = path.join(cwd, '.env');
   if (!fs.existsSync(file)) return { exists: false, values: {} };
@@ -102,7 +110,7 @@ export async function runDoctor(argv, io = {}) {
     return { ok: true, checks: [] };
   }
 
-  const cwd = io.cwd ?? process.cwd();
+  const cwd = projectRoot(io.cwd ?? process.cwd());
   const json = argv.includes('--json');
   const flagIndex = argv.indexOf('--callback-url');
   const callbackFlag = flagIndex >= 0 ? argv[flagIndex + 1] : undefined;

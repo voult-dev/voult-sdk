@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { compareVersions, runDoctor } from './doctor.js';
+import { compareVersions, projectRoot, runDoctor } from './doctor.js';
 
 // `voult upgrade`: moves every @voult/* dependency to the latest set released together (the versions
 // the latest create-voult-app pins into its templates), prints the CHANGELOG notes in between with
@@ -92,7 +92,7 @@ export async function runUpgrade(argv, io = {}) {
     log(HELP);
     return { ok: true, plan: [] };
   }
-  const cwd = io.cwd ?? process.cwd();
+  const cwd = projectRoot(io.cwd ?? process.cwd());
   const env = io.env ?? process.env;
   const dryRun = argv.includes('--dry-run');
   const fetchFn = io.fetch ?? fetch;

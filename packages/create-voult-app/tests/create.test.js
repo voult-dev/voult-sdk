@@ -86,7 +86,8 @@ test('installs with the package manager that ran it, then voult init --yes with 
   assert.equal(init.opts.env.VOULT_CLIENT_SECRET, 'top-secret');
   assert.ok(!JSON.stringify(init.args).includes('top-secret'), 'secret never on the command line');
   assert.ok(!t.logs.join('\n').includes('top-secret'), 'secret never printed');
-  assert.ok(t.logs.join('\n').includes('pnpm dev'));
+  assert.ok(t.logs.join('\n').includes('pnpm run dev'));
+  assert.ok(t.logs.join('\n').includes('pnpm run doctor'), 'not "pnpm doctor": that runs pnpm\'s own doctor');
 });
 
 test('without credentials it installs but tells you to run voult init', async () => {

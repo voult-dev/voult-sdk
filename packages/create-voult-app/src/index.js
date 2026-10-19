@@ -27,7 +27,8 @@ export function detectPackageManager(userAgent = process.env.npm_config_user_age
 }
 
 const VOULT_BIN = { npm: ['npx', ['voult']], pnpm: ['pnpm', ['exec', 'voult']], yarn: ['yarn', ['voult']], bun: ['bunx', ['voult']] };
-const RUN_SCRIPT = { npm: 'npm run', pnpm: 'pnpm', yarn: 'yarn', bun: 'bun run' };
+// "pnpm run", not "pnpm": pnpm's built-in commands (doctor, …) win over package scripts of the same name.
+const RUN_SCRIPT = { npm: 'npm run', pnpm: 'pnpm run', yarn: 'yarn', bun: 'bun run' };
 
 function defaultAsk(question, fallback = '', { secret = false } = {}) {
   if (!process.stdin.isTTY) return Promise.resolve(fallback);

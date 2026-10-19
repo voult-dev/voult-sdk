@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- **Fix: the pnpm next steps said `pnpm doctor`**, which runs pnpm's own built-in `doctor`, not the template's Voult check. They now say `pnpm run doctor` (and `pnpm run dev`).
+
 ## 0.1.2
 
 - **Fix: `pnpm create voult-app` with `express-react` failed on pnpm 12** (`ERR_PNPM_IGNORED_BUILDS: esbuild`): pnpm 12 blocks install scripts unless allowed, and esbuild (Vite's bundler) has one. The template now ships a `pnpm-workspace.yaml` allowing it (`allowBuilds`); npm and yarn ignore the file.

@@ -520,6 +520,14 @@ export async function startTestServer() {
         return;
       }
 
+      if (path === '/api/audit-logs/me') {
+        if (!requireAuth(req, res, state)) {
+          return;
+        }
+        send(res, 200, { logs: [{ action: 'LOGIN_SUCCESS', status: 'SUCCESS', timestamp: '2026-10-19T10:00:00.000Z' }], total: 1, limit: 20, skip: 0 });
+        return;
+      }
+
       if (path === '/api/me/set-password') {
         if (!requireAuth(req, res, state)) {
           return;

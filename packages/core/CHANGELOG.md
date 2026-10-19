@@ -2,6 +2,12 @@
 
 All notable changes to `@voult/core` are documented here.
 
+## 0.3.1
+
+- New route `POST /user/password` (`{ password }`): a user who signed up with Google or GitHub adds a password, so email + password sign-in works too. Checked against the password rule before Voult is called.
+- New route `GET /user/activity?limit=20&skip=0`: the signed-in user's own audit log (sign-ins, MFA and password changes, …), newest first.
+- `@voult/express` and `@voult/next` get both with a fresh install (they depend on `^0.3.0`).
+
 ## 0.3.0
 
 - **Breaking: error codes are the Voult API's.** A failed request now answers with the API's catalog code (`INVALID_CREDENTIALS`, `USER_EXISTS`, `WEAK_PASSWORD`, see ERRORS.md) instead of the SDK's category (`AUTHENTICATION_ERROR`, `CONFLICT_ERROR`, `VALIDATION_ERROR`). Errors raised by the router itself keep their codes (`AUTHENTICATION_ERROR` for "Authentication required", `INVALID_JSON`, `PAYLOAD_TOO_LARGE`). If you branch on `code`, switch to the catalog codes; branching on `status` is unaffected.

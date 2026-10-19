@@ -40,7 +40,7 @@ describe('session routes need a session (renew first, then 401 JSON)', () => {
   it.each([
     ['post', '/mfa/setup'], ['post', '/mfa/enable'], ['post', '/mfa/disable'], ['post', '/mfa/backup-codes'],
     ['get', '/sessions'], ['delete', '/sessions/session-1'], ['get', '/oauth/linked'], ['delete', '/oauth/linked/google'],
-    ['delete', '/user/me'], ['post', '/passkeys/register/options'], ['post', '/passkeys/register/verify'],
+    ['delete', '/user/me'], ['post', '/user/password'], ['get', '/user/activity'], ['post', '/passkeys/register/options'], ['post', '/passkeys/register/verify'],
     ['get', '/passkeys'], ['patch', '/passkeys/cred-1'], ['delete', '/passkeys/cred-1'],
   ])('%s %s → 401 without a session', async (method, path) => {
     const res = await request(await mount())[method](`/api/auth${path}`);
@@ -125,6 +125,33 @@ describe('linked accounts', () => {
 
     const unlinked = await agent.delete('/api/auth/oauth/linked/google');
     expect(unlinked.body.success).toBe(true);
+  });
+});
+
+describe('password and activity', () => {
+  it('POST /user/password sets a password for an OAuth-only account', async () => {
+    const agent = await signedIn();
+    const res = await agent.post('/api/auth/user/password').send({ password: 'another good password' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(lastCall('/api/me/set-password').body).toEqual({ password: 'another good password' });
+  });
+
+  it('POST /user/password refuses a weak password before calling Voult', async () => {
+    const agent = await signedIn();
+    const res = await agent.post('/api/auth/user/password').send({ password: 'short' });
+    expect(res.status).toBe(400);
+    expect(lastCall('/api/me/set-password')).toBeUndefined();
+  });
+
+  it('GET /user/activity returns the user\'s audit log, 20 at a time by default', async () => {
+    const agent = await signedIn();
+    const res = await agent.get('/api/auth/user/activity');
+    expect(res.status).toBe(200);
+    expect(res.body.logs[0].action).toBe('LOGIN_SUCCESS');
+    expect(lastCall('/api/audit-logs/me').query).toEqual({ limit: '20', skip: '0' });
+    await agent.get('/api/auth/user/activity?limit=5&skip=10');
+    expect(lastCall('/api/audit-logs/me').query).toEqual({ limit: '5', skip: '10' });
   });
 });
 

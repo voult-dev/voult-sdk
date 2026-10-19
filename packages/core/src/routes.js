@@ -9,6 +9,7 @@ import {
   getMfaStatus,
   regenerateMfaBackupCodes,
   revokeSession,
+  setPassword,
   setupMfa,
   unlinkOAuthProvider,
   refreshSession,
@@ -194,6 +195,16 @@ export const authRoutes = [
   ['DELETE', '/oauth/linked/:provider', authenticated(async (ctx) => (
     json(await unlinkOAuthProvider(ctx.params.provider, ctx.client))
   ))],
+
+  // Signed up with Google/GitHub only: add a password, so email + password sign-in works too.
+  ['POST', '/user/password', authenticated(async (ctx) => json(await setPassword(ctx.body.password, ctx.client)))],
+
+  // The user's own activity (sign-ins, MFA and password changes, …), newest first. ?limit=&skip=
+  // (No SDK function for it yet, so the client calls the API path directly.)
+  ['GET', '/user/activity', authenticated(async (ctx) => json(await ctx.client.get('/api/audit-logs/me', {
+    requireAuth: true,
+    params: { limit: ctx.query('limit') ?? '20', skip: ctx.query('skip') ?? '0' },
+  })))],
 
   // Voult disables the account (it can be re-enabled), and this browser is signed out.
   ['DELETE', '/user/me', authenticated(async (ctx) => {

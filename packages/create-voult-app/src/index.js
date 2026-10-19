@@ -124,7 +124,11 @@ export async function createVoultApp(argv, io = {}) {
   const runScript = RUN_SCRIPT[packageManager];
   const steps = [`  cd ${dir}`];
   if (!install) steps.push(`  ${packageManager} install`);
-  if (!initialized) steps.push('  npx voult init            # writes .env with your Client ID and Secret');
+  if (!initialized) {
+    const [cmd, prefix] = VOULT_BIN[packageManager];
+    const init = [cmd, ...prefix, 'init'].join(' ');
+    steps.push(`  ${init}${' '.repeat(Math.max(1, 26 - init.length))}# writes .env with your Client ID and Secret`);
+  }
   steps.push(`  ${runScript} dev${' '.repeat(Math.max(1, 20 - runScript.length))}# ${url}`);
   log(`\nNext:\n${steps.join('\n')}\n`);
   log(`In the Voult dashboard, add this under Callback URLs (it also covers magic links):\n  ${callback}\n`);

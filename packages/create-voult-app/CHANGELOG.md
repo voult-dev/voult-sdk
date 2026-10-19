@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- **Fix: `pnpm create voult-app` with `express-react` failed on pnpm 12** (`ERR_PNPM_IGNORED_BUILDS: esbuild`): pnpm 12 blocks install scripts unless allowed, and esbuild (Vite's bundler) has one. The template now ships a `pnpm-workspace.yaml` allowing it (`allowBuilds`); npm and yarn ignore the file.
+- The "run voult init" hint uses the package manager that ran it (`pnpm exec voult init`, `yarn voult init`, `bunx voult init`).
+
 ## 0.1.1
 
 - `express-react` is organised as `backend/` (`server.js`, `auth.js` with the auth routes, `api.js` for your own routes) and `frontend/` (`src/pages/` for your app, `src/auth/` for the auth UI). Still one package: one install, one `npm run dev`, one origin.

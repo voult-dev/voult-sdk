@@ -1,0 +1,4 @@
+# pnpm only (npm and yarn ignore this file): let esbuild, Vite's bundler, run its install script.
+# pnpm 12 fails the install without this (older pnpm only warns).
+allowBuilds:
+  esbuild: true

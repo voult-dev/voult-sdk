@@ -1,6 +1,6 @@
 {
   "name": "create-voult-app",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "npx create-voult-app: a new Express + React, Next.js or minimal app with Voult sign-in already wired up",
   "type": "module",
   "bin": {

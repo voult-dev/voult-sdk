@@ -97,6 +97,12 @@ test('without credentials it installs but tells you to run voult init', async ()
   assert.match(t.logs.join('\n'), /npx voult init/);
 });
 
+test('the voult init hint uses the package manager that ran it', async () => {
+  const t = io({ env: { npm_config_user_agent: 'pnpm/12.14.0 npm/? node/v24' } });
+  await createVoultApp(['app', '--template', 'minimal'], t.io);
+  assert.match(t.logs.join('\n'), /pnpm exec voult init/);
+});
+
 test('a failed install stops with a clear message', async () => {
   const t = io({ run: () => ({ status: 1 }) });
   await assert.rejects(() => createVoultApp(['app', '--template', 'minimal'], t.io), /npm install failed/);

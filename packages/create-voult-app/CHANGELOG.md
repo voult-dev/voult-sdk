@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Templates come with `@voult/cli` 0.3.0: `voult doctor --production` before deploying (the template READMEs say so) and `voult upgrade` to move to newer Voult packages later (new "Updating Voult" section in each README).
+
 ## 0.1.3
 
 - **Fix: the pnpm next steps said `pnpm doctor`**, which runs pnpm's own built-in `doctor`, not the template's Voult check. They now say `pnpm run doctor` (and `pnpm run dev`).

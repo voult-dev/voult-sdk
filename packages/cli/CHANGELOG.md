@@ -2,6 +2,13 @@
 
 All notable changes to `@voult/cli` are documented here.
 
+## 0.3.0
+
+- **`voult doctor --production`**: the deploy checks whatever `NODE_ENV` says: a 32+ character session secret, an https callback URL other than localhost on the app's allowlist, `VOULT_APP_URL` on https, and a warning when `NODE_ENV=production` isn't set. Run it with your production environment before deploying. `NODE_ENV=production` still turns the same checks on.
+- **Doctor fails when `.env` is committed to git**, in every mode, and says how to untrack it and rotate the secrets.
+- **Doctor warns when the API's major version is newer** than the one your `@voult/sdk` was built for.
+- **New `voult upgrade [--dry-run]`**: moves every `@voult/*` dependency to the latest set released together (what `create-voult-app` pins), prints the CHANGELOG notes in between with Breaking ones first, installs with your package manager, then runs doctor. Never edits app code.
+
 ## 0.2.5
 
 - **Leaner env files.** `voult init` writes only what the app needs: `VOULT_CLIENT_ID`, `VOULT_CLIENT_SECRET`, `VOULT_SESSION_SECRET` (plus `VOULT_BASE_URL` / `VOULT_SESSION_STRATEGY` when given a non-default value; `cookie` is no longer written). `.env.example` lists the 3 required keys, then the optional ones commented out, each explained on the line above.

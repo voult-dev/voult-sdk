@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -23,9 +24,11 @@ const SYMBOLS = { pass: '✓', warn: '⚠', fail: '✗', skip: '–' };
 const HELP = `voult doctor — check this project's Voult setup
 
 Usage:
-  voult doctor [--json] [--callback-url <url>]
+  voult doctor [--production] [--json] [--callback-url <url>]
 
 Options:
+  --production           Run the deploy checks whatever NODE_ENV says (https, a production callback on
+                         the allowlist, a strong session secret). Run it with your production settings.
   --json                 Machine-readable output (for CI). Exit code 1 if any check fails.
   --callback-url <url>   Your server's OAuth callback, if not http://localhost:$PORT/api/auth/oauth/callback
                          (VOULT_OAUTH_CALLBACK_URL is used when set)
@@ -70,6 +73,14 @@ async function loadProjectPackages(cwd) {
   };
 }
 
+/** Is this project's .env committed? Undefined when git can't tell (no git, not a repo). */
+function envTrackedByGit(cwd) {
+  const result = spawnSync('git', ['ls-files', '--error-unmatch', '.env'], { cwd, stdio: 'ignore' });
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  return undefined;
+}
+
 function isLocal(url) {
   try {
     return LOCAL_HOSTS.has(new URL(url).hostname);
@@ -100,11 +111,27 @@ export async function runDoctor(argv, io = {}) {
   // Like dotenv: variables already in the environment win over .env.
   const env = { ...dotEnv.values, ...(io.env ?? process.env) };
   const nodeEnv = env.NODE_ENV || 'development';
-  const production = nodeEnv === 'production';
+  const productionFlag = argv.includes('--production');
+  const production = productionFlag || nodeEnv === 'production';
 
   const checks = [];
   const add = (id, status, message, fix) => checks.push({ id, status, message, ...(fix && { fix }) });
   const finish = () => report(checks, { json, log, cwd, dotEnv });
+
+  // 0. A committed .env leaks the client secret to everyone with the repo, in any mode.
+  if (dotEnv.exists) {
+    const tracked = (io.envTrackedByGit ?? envTrackedByGit)(cwd);
+    if (tracked) {
+      add('env-git', 'fail', '.env is committed to git, so your Client Secret and session secret are in the repo.',
+        'git rm --cached .env, add .env to .gitignore, then rotate the Client Secret (dashboard) and VOULT_SESSION_SECRET');
+    } else if (tracked === false) {
+      add('env-git', 'pass', '.env is not tracked by git');
+    }
+  }
+  if (productionFlag && nodeEnv !== 'production') {
+    add('node-env', 'warn', `NODE_ENV is ${env.NODE_ENV ? `"${env.NODE_ENV}"` : 'not set'} here.`,
+      'Set NODE_ENV=production in your deploy environment (Secure cookies, no dev error details)');
+  }
 
   // 1. Packages, from the project itself.
   let packages;
@@ -168,6 +195,15 @@ export async function runDoctor(argv, io = {}) {
     return finish();
   }
 
+  // 6b. An API major version newer than the SDK knows means breaking API changes.
+  // ponytail: SDKs export API_MAJOR_VERSION from the first release made for API 2; every earlier one was built for 1.
+  const apiMajor = Number.parseInt(meta.version, 10);
+  const sdkApiMajor = sdk.API_MAJOR_VERSION ?? 1;
+  if (apiMajor > sdkApiMajor) {
+    add('api-major', 'warn', `The Voult API is v${meta.version}, but @voult/sdk ${versions.sdk ?? '?'} was built for API v${sdkApiMajor}.x.`,
+      'Run: npx voult upgrade (it lists the breaking changes)');
+  }
+
   // 7. SDK version the API supports.
   if (meta.minSdkVersion && versions.sdk && compareVersions(versions.sdk, meta.minSdkVersion) < 0) {
     add('version', 'fail', `@voult/sdk ${versions.sdk} is older than this API supports (${meta.minSdkVersion}+).`,
@@ -194,7 +230,21 @@ export async function runDoctor(argv, io = {}) {
   const callbackUrl = callbackFlag || config.oauthCallbackUrl || `http://localhost:${env.PORT || 3000}/api/auth/oauth/callback`;
   const allowed = app.allowedCallbackUrls ?? [];
   const assumedNote = assumed ? ' (assumed from PORT; pass --callback-url if your server differs)' : '';
-  if (allowed.includes(callbackUrl)) {
+  if (production) {
+    // The deployed server builds its callback from the request's host, so what matters is a real one on the list.
+    const remote = allowed.filter((url) => !isLocal(url));
+    if (!isLocal(callbackUrl) && !allowed.includes(callbackUrl)) {
+      add('callback', 'fail', `Callback URL ${callbackUrl} is not on the app's allowlist.`, 'Add it in Voult dashboard → your app → Callback URLs');
+    } else if (remote.some((url) => url.startsWith('https:'))) {
+      add('callback', 'pass', `Production callback allowlisted: ${remote.filter((url) => url.startsWith('https:')).join(', ')}`);
+    } else if (remote.length > 0) {
+      add('callback', 'fail', `The app's production callback URLs use http: ${remote.join(', ')}`,
+        'Serve over https and allowlist the https://…/api/auth/oauth/callback URL');
+    } else {
+      add('callback', 'fail', 'The app has no production callback URL on its allowlist (only localhost), so sign-in will fail once deployed.',
+        'Add https://<your domain>/api/auth/oauth/callback in Voult dashboard → your app → Callback URLs');
+    }
+  } else if (allowed.includes(callbackUrl)) {
     add('callback', 'pass', `Callback URL ${callbackUrl} is allowlisted`);
   } else if (allowed.length === 0 && isLocal(callbackUrl)) {
     add('callback', 'warn', `The app has no callback URLs yet, so only localhost works${assumedNote}.`,
@@ -208,6 +258,15 @@ export async function runDoctor(argv, io = {}) {
   if (production && callbackUrl.startsWith('http:') && !isLocal(callbackUrl)) {
     add('https', 'fail', `Production callback URL uses http: ${callbackUrl}`,
       "Serve over https; behind a proxy set app.set('trust proxy', 1) or VOULT_OAUTH_CALLBACK_URL");
+  }
+  if (production && config.appUrl) {
+    if (isLocal(config.appUrl)) {
+      add('app-url', 'fail', `VOULT_APP_URL points at localhost: ${config.appUrl}`, 'Set it to your deployed frontend, e.g. https://myapp.com');
+    } else if (config.appUrl.startsWith('http:')) {
+      add('app-url', 'fail', `VOULT_APP_URL uses http: ${config.appUrl}`, 'Use the https:// address of your frontend');
+    } else {
+      add('app-url', 'pass', `VOULT_APP_URL is https (${config.appUrl})`);
+    }
   }
 
   // 11. Providers.

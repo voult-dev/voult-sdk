@@ -9,3 +9,7 @@ npm run dev        # http://localhost:3000
 No `.env` yet? `npx voult init`. Add `http://localhost:3000/api/auth/oauth/callback` under **Callback URLs** in the Voult dashboard, then `npm run doctor`.
 
 `server.js` is the whole backend; `public/index.html` is the whole frontend. Every other route the router serves (MFA setup, sessions, passkeys, magic links, …) is listed in the [route reference](https://github.com/voult-dev/voult/blob/main/docs/integration/QUICK_START.md#route-reference). For a full UI, start from the `express-react` or `nextjs` template instead.
+
+## Updating Voult
+
+`npx voult upgrade` moves every `@voult/*` package to the latest set released together, lists what changed (breaking changes first) and runs `voult doctor`. Add `--dry-run` to look first. It never edits your code.

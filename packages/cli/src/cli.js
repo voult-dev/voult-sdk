@@ -1,21 +1,26 @@
 import { runInit } from './init.js';
 import { runDoctor } from './doctor.js';
+import { runUpgrade } from './upgrade.js';
 
 const HELP = `voult — scaffold Voult auth config for a server app
 
 Usage:
   voult init [--force] [--yes --client-id <id> --client-secret <secret>] [--strategy cookie|bearer] [--base-url <url>] [--quiet]
-  voult doctor [--json] [--callback-url <url>]
+  voult doctor [--production] [--json] [--callback-url <url>]
+  voult upgrade [--dry-run]
 
 Commands:
   init      Write .env + .env.example for @voult/express (prompts for credentials)
   doctor    Check .env, API reachability, credentials, callback URL and providers
+  upgrade   Move every @voult/* package to the latest set released together, list what changed, run doctor
 
 Options:
   --force   Overwrite an existing .env (init)
   --yes     No prompts: use the flags (init). The secret can come from VOULT_CLIENT_SECRET instead of --client-secret
   --quiet   Only report what was written (init)
+  --production  Run the deploy checks whatever NODE_ENV says (doctor)
   --json    Machine-readable output; exit code 1 if any check fails (doctor)
+  --dry-run Show the upgrade and its CHANGELOG notes, install nothing (upgrade)
   -h, --help   Show this help (or: voult doctor --help)
 `;
 
@@ -29,6 +34,9 @@ export async function runCli(argv, io = {}) {
 
   if (command === 'doctor') {
     return runDoctor(rest, io);
+  }
+  if (command === 'upgrade') {
+    return runUpgrade(rest, io);
   }
 
   if (!command || [command, ...rest].some((a) => a === '-h' || a === '--help')) {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -24,7 +24,7 @@ const realPackages = async () => ({
 });
 
 /** Fake Voult API: /api/meta + /api/apps/me, shaped per scenario. */
-const api = { minSdkVersion: '0.1.3', app: null, rejectCredentials: false };
+const api = { version: '1.0.0', minSdkVersion: '0.1.3', app: null, rejectCredentials: false };
 let server;
 let baseURL;
 
@@ -34,7 +34,7 @@ before(async () => {
       res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(body));
     };
-    if (req.url === '/api/meta') return send(200, { version: '1.0.0', minSdkVersion: api.minSdkVersion, features: ['oauth-hosted'] });
+    if (req.url === '/api/meta') return send(200, { version: api.version, minSdkVersion: api.minSdkVersion, features: ['oauth-hosted'] });
     if (req.url === '/api/apps/me') {
       if (api.rejectCredentials || req.headers['x-client-secret'] !== CLIENT_SECRET) {
         return send(401, { error: { code: 'INVALID_CLIENT', message: 'Invalid client credentials', status: 401 } });
@@ -72,12 +72,12 @@ const baseEnv = () => [
 ];
 
 /** Run `voult doctor` in a temp project; returns result + printed output. */
-async function doctor(envLines, { args = [], env = {}, app = goodApp(), loadPackages = realPackages } = {}) {
+async function doctor(envLines, { args = [], env = {}, app = goodApp(), loadPackages = realPackages, envTrackedByGit = () => undefined } = {}) {
   api.app = app;
   const logs = [];
   const cwd = project(envLines);
   try {
-    const result = await runCli(['doctor', ...args], { cwd, env, log: (m) => logs.push(m), loadPackages });
+    const result = await runCli(['doctor', ...args], { cwd, env, log: (m) => logs.push(m), loadPackages, envTrackedByGit });
     return { ...result, output: logs.join('\n'), byId: (id) => result.checks.find((c) => c.id === id) };
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
@@ -254,8 +254,90 @@ test('bin: exits 1 when a check fails, prints help for doctor --help', async () 
     const code = await new Promise((resolve) => execFile(process.execPath, [bin, 'doctor'], { cwd, env: { PATH: process.env.PATH } }, (err) => resolve(err?.code ?? 0)));
     assert.equal(code, 1);
     const help = await new Promise((resolve) => execFile(process.execPath, [bin, 'doctor', '--help'], (_e, stdout) => resolve(stdout)));
-    assert.match(help, /voult doctor \[--json\]/);
+    assert.match(help, /voult doctor \[--production\] \[--json\]/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+const PROD_CALLBACK = 'https://api.myapp.test/api/auth/oauth/callback';
+const prodApp = () => ({ ...goodApp(), allowedCallbackUrls: ['http://localhost:3000/api/auth/oauth/callback', PROD_CALLBACK] });
+
+test('--production: runs the deploy checks without NODE_ENV, and warns that NODE_ENV is not set', async () => {
+  const r = await doctor(baseEnv(), { args: ['--production'], app: prodApp() });
+  assert.equal(r.ok, true, r.output);
+  assert.equal(r.byId('node-env').status, 'warn');
+  assert.equal(r.byId('callback').status, 'pass');
+  assert.match(r.byId('callback').message, /api\.myapp\.test/);
+  const withNodeEnv = await doctor([...baseEnv(), 'NODE_ENV=production'], { args: ['--production'], app: prodApp() });
+  assert.equal(withNodeEnv.byId('node-env'), undefined);
+});
+
+test('--production: only localhost on the allowlist fails', async () => {
+  const r = await doctor(baseEnv(), { args: ['--production'] });
+  assert.equal(r.ok, false);
+  assert.equal(r.byId('callback').status, 'fail');
+  assert.match(r.byId('callback').message, /no production callback URL/);
+});
+
+test('--production: an http production callback on the allowlist fails', async () => {
+  const r = await doctor(baseEnv(), { args: ['--production'], app: { ...goodApp(), allowedCallbackUrls: ['http://api.myapp.test/api/auth/oauth/callback'] } });
+  assert.equal(r.byId('callback').status, 'fail');
+  assert.match(r.byId('callback').message, /use http/);
+});
+
+test('--production: a short session secret fails', async () => {
+  const lines = baseEnv().map((l) => (l.startsWith('VOULT_SESSION_SECRET') ? 'VOULT_SESSION_SECRET=short' : l));
+  const r = await doctor(lines, { args: ['--production'], app: prodApp() });
+  assert.equal(r.byId('session-secret').status, 'fail');
+});
+
+test('--production: VOULT_APP_URL must be https and not localhost', async () => {
+  const check = async (appUrl) => (await doctor([...baseEnv(), `VOULT_APP_URL=${appUrl}`], { args: ['--production'], app: prodApp() })).byId('app-url');
+  assert.equal((await check('https://myapp.test')).status, 'pass');
+  assert.equal((await check('http://myapp.test')).status, 'fail');
+  assert.equal((await check('http://localhost:5173')).status, 'fail');
+  const dev = await doctor([...baseEnv(), 'VOULT_APP_URL=http://localhost:5173']);
+  assert.equal(dev.byId('app-url'), undefined, 'not checked outside production');
+});
+
+test('env-git: a committed .env fails in any mode; untracked passes; no git says nothing', async () => {
+  const tracked = await doctor(baseEnv(), { envTrackedByGit: () => true });
+  assert.equal(tracked.ok, false);
+  assert.equal(tracked.byId('env-git').status, 'fail');
+  assert.match(tracked.byId('env-git').fix, /git rm --cached \.env/);
+  assert.equal((await doctor(baseEnv(), { envTrackedByGit: () => false })).byId('env-git').status, 'pass');
+  assert.equal((await doctor(baseEnv())).byId('env-git'), undefined);
+});
+
+test('env-git: real git repo, .env committed vs ignored', { skip: spawnSync('git', ['--version']).status !== 0 && 'no git' }, async () => {
+  const dir = project(baseEnv());
+  const git = (...args) => spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...args], { cwd: dir });
+  try {
+    git('init', '-q');
+    const run = async () => {
+      api.app = goodApp();
+      const result = await runCli(['doctor', '--json'], { cwd: dir, env: {}, log: () => {}, loadPackages: realPackages });
+      return result.checks.find((c) => c.id === 'env-git').status;
+    };
+    assert.equal(await run(), 'pass');
+    git('add', '.env');
+    git('commit', '-qm', 'oops');
+    assert.equal(await run(), 'fail');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('api-major: warns when the API major version is newer than the SDK was built for', async () => {
+  api.version = '2.0.0';
+  try {
+    const r = await doctor(baseEnv());
+    assert.equal(r.byId('api-major').status, 'warn');
+    assert.match(r.byId('api-major').fix, /voult upgrade/);
+    assert.equal(r.ok, true, 'a warning, not a failure');
+  } finally {
+    api.version = '1.0.0';
+  }
+  assert.equal((await doctor(baseEnv())).byId('api-major'), undefined);
 });

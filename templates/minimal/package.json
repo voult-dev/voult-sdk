@@ -14,7 +14,7 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "@voult/cli": "^0.2.5"
+    "@voult/cli": "^0.3.0"
   },
   "engines": {
     "node": ">=20.12"

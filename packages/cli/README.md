@@ -43,6 +43,7 @@ Checks a project's setup before the first sign-in: run it in the folder with you
 ```bash
 npx voult doctor                   # human-readable
 npx voult doctor --json            # for CI; exit code 1 if anything fails
+npx voult doctor --production      # before deploying: the production checks, whatever NODE_ENV says
 npx voult doctor --callback-url https://api.myapp.com/api/auth/oauth/callback
 ```
 
@@ -51,19 +52,38 @@ server runs. It never prints secret values.
 
 | Check | Fails / warns when | Fix it shows |
 |---|---|---|
+| env-git | `.env` is committed to git (fails in every mode: the secrets are in the repo) | `git rm --cached .env`, ignore it, rotate the secrets |
+| node-env | `--production` while `NODE_ENV` isn't `production` (warning) | set it in the deploy environment |
 | packages | `@voult/express` / `@voult/sdk` not installed | `npm install …` |
 | env | `.env` doesn't validate (missing ID/secret, bad URL, unknown strategy) | the server's own error message |
 | session-secret | cookie sessions and `VOULT_SESSION_SECRET` missing/short (fails in production, warns in dev) | `openssl rand -hex 32` |
 | stray-env | `.env` still has `GOOGLE_*`, `GITHUB_*`, … (warning) | configure providers in the dashboard instead |
 | reachable | `VOULT_BASE_URL` doesn't answer `/api/meta` | check the URL / network |
+| api-major | the API's major version is newer than your `@voult/sdk` was built for (warning) | `npx voult upgrade` |
 | version | your `@voult/sdk` is older than the API supports | `npm install @voult/sdk@latest` |
 | credentials | the client ID/secret are rejected | copy them from the dashboard again |
-| callback | your OAuth callback isn't on the app's allowlist (warns if the list is empty and you're on localhost) | the exact URL to add |
+| callback | your OAuth callback isn't on the app's allowlist (warns if the list is empty and you're on localhost). In production: no https callback other than localhost on the allowlist | the exact URL to add |
 | https | production callback over plain http | https, `trust proxy`, or `VOULT_OAUTH_CALLBACK_URL` |
+| app-url | production `VOULT_APP_URL` on http or localhost | your frontend's https address |
 | providers | a provider is switched on without credentials (warns if none are on) | which provider page to fix |
 
-The callback it checks is `VOULT_OAUTH_CALLBACK_URL`, else `--callback-url`, else
+Production checks run with `--production` or `NODE_ENV=production`. The callback it checks is `--callback-url`, else `VOULT_OAUTH_CALLBACK_URL`, else
 `http://localhost:$PORT/api/auth/oauth/callback` (PORT defaults to 3000).
+
+## `voult upgrade`
+
+Moves every `@voult/*` package in `package.json` to the latest set released together (the versions the
+latest `create-voult-app` pins), so the packages always match each other.
+
+```bash
+npx voult upgrade --dry-run   # what would change, and the CHANGELOG notes in between
+npx voult upgrade             # install it, then run voult doctor
+```
+
+It prints each package's CHANGELOG entries between your version and the new one, **Breaking** ones first
+with what to change, installs with your package manager (from the lockfile: npm, pnpm, yarn or bun),
+then runs `voult doctor`. It never edits your code: starter files from a template are yours, so apply the
+Breaking notes yourself.
 
 Requires Node 20.12+.
 

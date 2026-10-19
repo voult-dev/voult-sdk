@@ -45,4 +45,8 @@ One package, one `npm install`, one `npm run dev`: the backend and frontend are 
 npm run build && npm start   # one server on $PORT serves the API and the app
 ```
 
-Set the same variables on your host plus `NODE_ENV=production`, add your real `https://…/api/auth/oauth/callback` under Callback URLs, and run `npx voult doctor`.
+Set the same variables on your host plus `NODE_ENV=production`, add your real `https://…/api/auth/oauth/callback` under Callback URLs, and run `npx voult doctor --production` with your production settings.
+
+## Updating Voult
+
+`npx voult upgrade` moves every `@voult/*` package to the latest set released together, lists what changed (breaking changes first) and runs `voult doctor`. Add `--dry-run` to look first. It never edits your code.

@@ -37,4 +37,8 @@ After signing in or out, navigate with a full page load (`window.location.assign
 npm run build && npm start
 ```
 
-Set the same variables on your host (Vercel: Project → Settings → Environment Variables), add your real `https://…/api/auth/oauth/callback` under Callback URLs, and run `npx voult doctor`.
+Set the same variables on your host (Vercel: Project → Settings → Environment Variables), add your real `https://…/api/auth/oauth/callback` under Callback URLs, and run `npx voult doctor --production` with your production settings.
+
+## Updating Voult
+
+`npx voult upgrade` moves every `@voult/*` package to the latest set released together, lists what changed (breaking changes first) and runs `voult doctor`. Add `--dry-run` to look first. It never edits your code.

@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",
-    "@voult/cli": "^0.2.5",
+    "@voult/cli": "^0.3.0",
     "concurrently": "^9.2.0",
     "vite": "^7.1.0"
   },

@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env --watch server.js",
-    "start": "node --env-file=.env server.js",
+    "dev": "node --watch server.js",
+    "start": "node server.js",
     "doctor": "voult doctor --callback-url http://localhost:3000/api/auth/oauth/callback"
   },
   "dependencies": {

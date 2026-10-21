@@ -59,6 +59,13 @@ test('the templates have no auth route handlers of their own (the router serves 
   assert.deepEqual(nextRoutes.sort(), ['auth', 'me']);
 });
 
+test('npm start works on hosts without a .env file (no --env-file in any script)', () => {
+  for (const template of Object.keys(TEMPLATES)) {
+    const { scripts } = JSON.parse(fs.readFileSync(path.join(templatesDir(), template, 'package.json'), 'utf8'));
+    assert.doesNotMatch(Object.values(scripts).join(' '), /--env-file=/, template);
+  }
+});
+
 test('refuses a folder that exists and is not empty', async () => {
   fs.mkdirSync(path.join(cwd, 'taken'));
   fs.writeFileSync(path.join(cwd, 'taken', 'file.txt'), 'x');

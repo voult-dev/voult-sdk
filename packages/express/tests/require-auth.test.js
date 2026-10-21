@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { createVoultMiddleware, createVoultRouter, requireAuth } from '../src/index.js';
 import { startTestServer } from '../../voult-sdk/tests/support/test-server.js';
+import { sign } from '../../core/src/cookies.js';
 
 /** An integrator's app: the router plus one of *their own* protected routes. */
 async function integratorApp() {
@@ -50,6 +51,30 @@ describe('requireAuth on your own routes', () => {
       expect(res.status).toBe(200);
       expect(state.refreshCount).toBe(1);
       expect(cookie(res, 'voult_access')).toMatch(/access-2/);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('renews when the access token inside the cookie has expired, even though the cookie has not', async () => {
+    const { app, server, state } = await integratorApp();
+    try {
+      const login = await request(app).post('/api/auth/email-login').send({ email: 'user@example.com', password: 'StrongPass123!' });
+      const jwt = (exp) => `h.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.s`;
+      const access = async (exp) => `voult_access=${encodeURIComponent(`s:${await sign(jwt(exp), 'session-secret')}`)}`;
+      const others = `${cookie(login, 'voult_refresh')}; ${cookie(login, 'voult_user')}`;
+
+      const live = await request(app).get('/api/orders').set('Cookie', `${await access(Date.now() / 1000 + 600)}; ${others}`);
+      expect(live.status).toBe(200);
+      expect(state.refreshCount).toBe(0);
+
+      const expired = await request(app).get('/api/orders').set('Cookie', `${await access(Date.now() / 1000 - 1)}; ${others}`);
+      expect(expired.status).toBe(200);
+      expect(state.refreshCount).toBe(1);
+      expect(cookie(expired, 'voult_access')).toMatch(/access-2/);
+
+      const signedOut = await request(app).get('/api/orders').set('Cookie', await access(Date.now() / 1000 - 1));
+      expect(signedOut.status).toBe(401);
     } finally {
       server.close();
     }

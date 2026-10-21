@@ -3,6 +3,9 @@ import express from 'express';
 import { api } from './api.js';
 import { mountAuth } from './auth.js';
 
+// .env when there is one (local dev); hosts like Render set real environment variables instead.
+try { process.loadEnvFile(); } catch (err) { if (err.code !== 'ENOENT') throw err; }
+
 const app = express();
 app.set('trust proxy', 1);       // correct https URLs behind Render, NGINX, …
 

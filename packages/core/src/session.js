@@ -65,6 +65,21 @@ export function parseUserCookie(value) {
   }
 }
 
+/**
+ * True once a JWT's `exp` has passed. Not a verification (Voult does that): it only stops a
+ * 1-hour access cookie from vouching for a 15-minute token. Unreadable tokens count as live.
+ * @param {string} token
+ */
+export function isAccessTokenExpired(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const { exp } = JSON.parse(atob(payload));
+    return typeof exp === 'number' && exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+}
+
 /** @param {VoultConfig} config */
 export function createVoultClient(config) {
   return new VoultClient({ clientId: config.clientId, clientSecret: config.clientSecret, baseURL: config.baseURL });
@@ -84,6 +99,8 @@ export function restoreSession(client, { read, authorization, refreshToken: bear
 
   if (config.session.strategy === 'cookie') {
     accessToken = read(COOKIE_ACCESS);
+    // Expired: treat as absent so renewSession() refreshes (or the request is signed out).
+    if (typeof accessToken === 'string' && isAccessTokenExpired(accessToken)) accessToken = undefined;
     refreshToken = read(COOKIE_REFRESH);
     user = parseUserCookie(read(COOKIE_USER));
   } else {

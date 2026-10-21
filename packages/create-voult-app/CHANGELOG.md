@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5
+
+- **Fix: `npm start` failed on hosts without a `.env` file** (Render, Fly, Docker, …: they set environment variables, not a file). The Express templates (`express-react`, `minimal`) ran `node --env-file=.env`, which exits with `.env: not found`. The server now loads `.env` itself when there is one (`process.loadEnvFile()`), and variables your host sets always win. A test keeps `--env-file` out of every template script.
+
 ## 0.1.4
 
 - Templates come with `@voult/cli` 0.3.0: `voult doctor --production` before deploying (the template READMEs say so) and `voult upgrade` to move to newer Voult packages later (new "Updating Voult" section in each README).

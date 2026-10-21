@@ -2,6 +2,11 @@
 
 All notable changes to `@voult/core` are documented here.
 
+## 0.3.2
+
+- **Fix: an expired access token no longer counts as a session.** The access cookie lives 1 hour but the token inside it 15 minutes, so for up to 45 minutes `requireAuth` (and every route behind a session) let through a token Voult had already expired, including one from a session that was signed out elsewhere or ended by a password reset. Cookie sessions now renew from the refresh cookie as soon as the token's `exp` passes, so a revoked session stops working on your own routes within the token lifetime. New export `isAccessTokenExpired(token)`.
+- `@voult/express` and `@voult/next` get it with a fresh install (they depend on `^0.3.0`).
+
 ## 0.3.1
 
 - New route `POST /user/password` (`{ password }`): a user who signed up with Google or GitHub adds a password, so email + password sign-in works too. Checked against the password rule before Voult is called.
